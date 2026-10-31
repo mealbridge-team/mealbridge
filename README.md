@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MealBridge
 
-## Getting Started
+MealBridge turns tonight's surplus restaurant food into tonight's shelter meals, and pays the
+volunteer who drives it there before they get home. Built for the PayPal AI Hackathon.
 
-First, run the development server:
+> Hackathon prototype. All money is PayPal **sandbox** money, and every business, shelter and
+> person in the demo data is fictional. The demo is set in the San Francisco Bay Area.
+
+## How the money works
+
+Restaurants never pay per pickup, because a fee at the moment they decide whether to bin the food
+works against donating. Instead, every trip's fuel reimbursement is **reserved before a driver is
+dispatched**, from the first source that can cover it:
+
+1. the restaurant's own monthly compliance plan (PayPal Subscriptions), if it has one
+2. donors who earmarked that area (PayPal Orders)
+3. sponsors and city food-recovery grants (PayPal Invoicing), area-specific first
+4. the general rescue fund
+
+A trip nobody can fund yet waits as **unfunded** and donors are asked to cover it. When a
+delivery is verified, the reserved money is sent to the driver with the PayPal Payouts API
+(PayPal or Venmo), and PayPal webhooks settle the ledger.
+
+Why restaurants still sign up for the plan: California's SB 1383 requires large food businesses to
+donate edible surplus to food recovery organisations and keep records. The plan produces those
+records, plus donation receipts.
+
+## Run it locally
+
+Needs Node 22+. No database or API keys required.
 
 ```bash
+npm install
+npm run setup   # creates the embedded database and loads the demo evening
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Without keys the app runs in **demo mode**: PayPal calls are mocked and the Intake agent reads
+notes with simple rules. `GET /api/health` shows which mode each part is in. To use the real
+services, copy `.env.example` to `.env.local` and fill in a Gemini key and PayPal sandbox credentials.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm test        # food-safety, matching and funding rules, plus the money loop end to end
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Food safety rules (assumptions)
 
-## Learn More
+Safety decisions are made by code in `src/domain/food-safety.ts`, never by the model. The AI can
+send a listing to human review but can't approve one the rules reject.
 
-To learn more about Next.js, take a look at the following resources:
+- Held unrefrigerated: at most 2 hours since cooking. Held hot: 4 hours. Held cold: 24 hours.
+  Based on the time-as-a-control approach in the FDA Food Code and California Retail Food Code,
+  made stricter for unrefrigerated food.
+- Raw meat and raw seafood are never accepted.
+- At least 45 minutes of safe time must remain for pickup and delivery.
+- Donors are protected by the federal Bill Emerson Good Samaritan Food Donation Act.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This is a prototype, not legal guidance.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## AI tools used
 
-## Deploy on Vercel
+- **Google Gemini Flash** (via the Vercel AI SDK): reads the restaurant's photo and note into a
+  structured listing (portions, allergens, diet tags, holding).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT, see [LICENSE](LICENSE).
