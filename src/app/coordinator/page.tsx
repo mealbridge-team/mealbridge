@@ -75,7 +75,7 @@ async function CoordinatorView() {
       {!canAct && (
         <Card className="border-saffron/40 bg-saffron-soft/40">
           <p className="mb-3 text-sm text-muted">
-            You can watch everything here. Approving payouts, re-planning trips, invoicing sponsors and resetting the demo need the coordinator passcode (judges: it&apos;s in the README).
+            You can watch everything here. Approving payouts, re-planning trips, invoicing sponsors and resetting the demo need the coordinator passcode (judges: it&apos;s in our Devpost submission).
           </p>
           <UnlockForm />
         </Card>
