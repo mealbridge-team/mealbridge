@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { and, count, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { listings as listingsTable, matches, trips as tripsTable } from "@/db/schema";
-import { cancelCompliancePlan, subscribeCompliancePlan } from "@/app/actions";
+import { cancelCompliancePlan, checkPlanPayment, subscribeCompliancePlan } from "@/app/actions";
 import { allRestaurants, recentListings, tripViews } from "@/lib/queries";
 import { poolBalances } from "@/services/treasury";
 import { isTonight } from "@/lib/clock";
@@ -117,6 +117,12 @@ async function RestaurantView({ searchParams }: { searchParams: PageProps<"/rest
                 <p className="text-xs text-muted">recorded donations</p>
               </div>
             </div>
+            {!ownPool && (
+              <form action={checkPlanPayment.bind(null, restaurant.id)} className="flex flex-wrap items-center gap-3 rounded-2xl bg-saffron-soft p-4">
+                <p className="flex-1 text-ink">PayPal takes your first <Money cents={COMPLIANCE_PLAN_CENTS} /> a few minutes after you approve. It shows here once it lands.</p>
+                <SubmitButton variant="secondary" pendingText="Checking…">Check with PayPal</SubmitButton>
+              </form>
+            )}
             <div className="flex flex-wrap gap-2">
               <a href={`/api/restaurants/${restaurant.id}/records`} className="inline-flex items-center rounded-2xl bg-leaf px-4 py-2.5 font-semibold text-white">
                 Download SB 1383 records (CSV)

@@ -118,6 +118,20 @@ export async function syncPlanPayments(db: Db, restaurantId: string) {
   return recorded;
 }
 
+// Catch-up for every active plan, in case a PAYMENT.SALE.COMPLETED webhook was missed or is late.
+export async function syncAllPlanPayments(db: Db) {
+  const onPlan = await db.select({ id: restaurants.id }).from(restaurants).where(eq(restaurants.plan, "compliance"));
+  let recorded = 0;
+  for (const { id } of onPlan) {
+    try {
+      recorded += await syncPlanPayments(db, id);
+    } catch (err) {
+      console.error("plan payment sync failed", id, err);
+    }
+  }
+  return recorded;
+}
+
 export async function endSubscription(db: Db, restaurantId: string) {
   const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, restaurantId));
   if (!restaurant || restaurant.plan !== "compliance") return;

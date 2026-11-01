@@ -24,7 +24,7 @@ import { requireCoordinator, unlockCoordinator } from "@/lib/access";
 import { requestOrigin } from "@/lib/origin";
 import { PayPalError } from "@/paypal/client";
 import { draftReminder, invoiceSponsor, InvoiceError, refreshInvoices, sendReminder, simulateInvoicePayment } from "@/services/invoices";
-import { endSubscription, startSubscription, SubscriptionError } from "@/services/subscriptions";
+import { endSubscription, startSubscription, SubscriptionError, syncAllPlanPayments, syncPlanPayments } from "@/services/subscriptions";
 
 // Prototype note: there is no sign-in yet. Each screen picks who you are from a list, so these
 // actions trust the ids they're given. Real accounts are out of scope for the hackathon.
@@ -139,6 +139,7 @@ export async function coordinatorDismissAlert(alertId: string) {
 export async function checkPayouts() {
   // Only reads PayPal's state and settles the ledger, so it's safe for anyone to trigger.
   await refreshPendingPayouts(getDb());
+  await syncAllPlanPayments(getDb());
   refresh();
 }
 
@@ -159,6 +160,17 @@ export async function subscribeCompliancePlan(restaurantId: string) {
     target = `/restaurant?r=${restaurantId}&plan=error`;
   }
   redirect(target);
+}
+
+// PayPal takes the first plan payment a few minutes after approval; this asks for it directly.
+export async function checkPlanPayment(restaurantId: string) {
+  if (!allow(`plan-check:${await clientIp()}`, 10, 60_000)) return;
+  try {
+    await syncPlanPayments(getDb(), restaurantId);
+  } catch (err) {
+    console.error("plan payment check failed", err);
+  }
+  refresh();
 }
 
 export async function cancelCompliancePlan(restaurantId: string) {
