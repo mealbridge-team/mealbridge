@@ -54,9 +54,15 @@ export function DropoffForm({ tripId, driverId, shelter }: { tripId: string; dri
           Delivered
         </SubmitButton>
       ) : (
-        <button type="button" disabled className={`${buttonClass.primary} w-full`}>
-          Share location to finish
-        </button>
+        <>
+          <p className="text-xs text-muted">
+            To finish, tap <strong className="text-ink">Use my location</strong> at the shelter, or{" "}
+            <strong className="text-ink">Demo: I&apos;m at the shelter</strong> if you&apos;re trying the demo.
+          </p>
+          <button type="button" disabled className={`${buttonClass.primary} w-full`}>
+            Delivered (needs your location)
+          </button>
+        </>
       )}
     </form>
   );
