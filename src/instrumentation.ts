@@ -5,7 +5,20 @@ export async function register() {
   const { getDb, runMigrations } = await import("@/db");
   const { restaurants } = await import("@/db/schema");
   const db = getDb();
-  await runMigrations(db);
+
+  // A freshly created Render database can take a moment to accept connections. Without the
+  // retry a failed migration leaves the server up but answering every request with a 500.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await runMigrations(db);
+      break;
+    } catch (error) {
+      if (attempt >= 10) throw error;
+      const reason = error instanceof Error ? (error.cause ?? error).toString() : String(error);
+      console.warn(`Database not ready (attempt ${attempt}/10): ${reason}`);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  }
 
   const existing = await db.select({ id: restaurants.id }).from(restaurants).limit(1);
   if (existing.length === 0) {
