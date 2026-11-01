@@ -62,8 +62,9 @@ pickups first and produces those records as a CSV ready to file.
 
 ## AI tools used
 
-All AI runs on **Google Gemini** (free tier) through the Vercel AI SDK: Gemini Flash for reading
-photos, Gemini Flash-Lite for short text and the dashboard agents. Decisions about money and food
+All AI runs on **Google Gemini 3.5 Flash-Lite** (free tier) through the Vercel AI SDK: reading
+photos and notes, checking drop-off photos, short explanations and the dashboard agents. (Flash's
+free tier allows only 20 requests a day; set `GEMINI_MODEL` to use it on a paid key.) Decisions about money and food
 safety are made by plain code; the models handle messy input and explanations, and can only send
 something to a person, never approve it.
 

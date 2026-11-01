@@ -41,7 +41,7 @@ async function ModeBadges() {
   await connection();
   const badges = [
     paypalMode() === "sandbox" ? "PayPal sandbox" : "PayPal simulated",
-    aiMode() === "gemini" ? "Gemini Flash" : "AI off: rules",
+    aiMode() === "gemini" ? "Gemini Flash-Lite" : "AI off: rules",
   ];
   if (demoEveningActive()) badges.push("Demo clock: shelters open");
   return (

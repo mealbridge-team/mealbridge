@@ -1,9 +1,10 @@
 import { createGoogle } from "@ai-sdk/google";
 
-// Gemini on the free tier. "main" (Flash) reads photos; "fast" (Flash-Lite) writes the one-line
-// explanations and runs the dashboard agents, which make many short calls. Free-tier limits are per
-// model, so splitting them also spreads the load. Override with GEMINI_MODEL / GEMINI_FAST_MODEL.
-export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash";
+// Gemini on the free tier. "main" reads photos and notes; "fast" writes the one-line explanations
+// and runs the dashboard agents. Both default to Flash-Lite: on the free tier Flash allows only 20
+// requests a day, which a public demo uses up in a few rescues. Set GEMINI_MODEL=gemini-3.5-flash
+// on a paid key for sharper photo reading.
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 export const DEFAULT_GEMINI_FAST_MODEL = "gemini-3.5-flash-lite";
 
 export type ModelKind = "main" | "fast";
@@ -23,12 +24,12 @@ export function geminiModel(kind: ModelKind = "main") {
   return google(modelId(kind));
 }
 
-// Requests per minute we allow ourselves per model, a little under the free tier's limits.
-const RPM: Record<ModelKind, number> = {
-  main: Number(process.env.GEMINI_RPM ?? 5),
-  fast: Number(process.env.GEMINI_FAST_RPM ?? 14),
-};
-const recent: Record<ModelKind, number[]> = { main: [], fast: [] };
+// Requests per minute we allow ourselves per model, a little under the free tier's limits. Free-tier
+// limits are per model, so when both kinds use the same model they share one window.
+function rpm(model: string) {
+  return model === modelId("fast") ? Number(process.env.GEMINI_FAST_RPM ?? 14) : Number(process.env.GEMINI_RPM ?? 5);
+}
+const recent = new Map<string, number[]>();
 
 // Daily cap on Gemini calls so a busy public demo can't exhaust the free-tier quota during
 // judging. Past the cap, agents fall back to their rule-based behaviour (and say so).
@@ -51,11 +52,13 @@ export async function takeAiCall(kind: ModelKind = "main", maxWaitMs = 8_000): P
   if (callsToday >= DAILY_LIMIT) return false;
 
   const deadline = Date.now() + maxWaitMs;
-  const window = recent[kind];
+  const model = modelId(kind);
+  const window = recent.get(model) ?? [];
+  recent.set(model, window);
   for (;;) {
     const now = Date.now();
     while (window.length && now - window[0] >= 60_000) window.shift();
-    if (window.length < RPM[kind]) {
+    if (window.length < rpm(model)) {
       window.push(now);
       callsToday++;
       return true;

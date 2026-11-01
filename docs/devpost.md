@@ -42,7 +42,7 @@ against donating.
 - **PayPal:** Orders v2 with the JS SDK v6 for donations; Payouts (PayPal and Venmo) for drivers;
   Subscriptions for the restaurant plan; Invoicing for sponsors; webhooks with signature
   verification; an idempotent ledger keyed on PayPal references so replays never double-count.
-- **AI:** Google Gemini Flash and Flash-Lite through the Vercel AI SDK. Models only read messy input
+- **AI:** Google Gemini 3.5 Flash-Lite through the Vercel AI SDK. Models only read messy input
   and explain decisions; money and food safety stay in deterministic, tested code.
 - **AG Studio:** the impact dashboard, themed to the app, with a custom Insights agent built on the
   Studio Agent Framework. It uses Studio's own tools plus a live-operations tool of ours, delegates
@@ -56,8 +56,8 @@ against donating.
 - Getting the money right: reserving funds before dispatch, all-or-nothing allocation across four
   sources, and settling payouts from webhooks or by asking PayPal, whichever comes first.
 - Gemini's free tier allows about five requests a minute on Flash. A multi-agent dashboard run makes
-  many calls, so we split work across Flash and Flash-Lite and queue calls per model instead of
-  failing.
+  many calls, and Flash allows only 20 a day, so everything runs on Flash-Lite and calls queue per
+  model instead of failing.
 - Our first sandbox business account was outside the US, which PayPal doesn't allow for payouts.
 - Shelters keep evening hours, but judges try demos at any hour, so the demo has a labelled
   "demo evening" clock for opening hours only.
@@ -87,9 +87,9 @@ openstreetmap, render
 
 ## AI tools field
 
-Google Gemini Flash (vision: reading food photos and checking drop-off photos) and Gemini Flash-Lite
-(match explanations, sponsor reminder drafts, and the AG Studio Insights agent and Studio's built-in
-agents), called through the Vercel AI SDK. Claude Code was used as a coding assistant.
+Google Gemini 3.5 Flash-Lite: vision for reading food photos and checking drop-off photos, plus
+match explanations, sponsor reminder drafts, and the AG Studio Insights agent and Studio's built-in
+agents, called through the Vercel AI SDK. Claude Code was used as a coding assistant.
 
 ## Links
 

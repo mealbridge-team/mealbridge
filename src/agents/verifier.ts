@@ -4,7 +4,9 @@ import { geminiModel, takeAiCall } from "@/ai/model";
 
 const photoCheckSchema = z.object({
   showsFood: z.boolean(),
-  consistentWithListing: z.boolean().describe("Roughly the same kind and amount of food as listed"),
+  consistentWithListing: z
+    .boolean()
+    .describe("Could plausibly be part of this delivery: the same kind of food, or sealed containers of it"),
   notes: z.string().describe("One short sentence a coordinator can read"),
 });
 export type PhotoCheck = z.infer<typeof photoCheckSchema>;
@@ -20,7 +22,9 @@ export async function checkDropoffPhoto(
     const { output } = await generateText({
       model: geminiModel(),
       system:
-        "You check delivery photos for a food-rescue app. Be fair: containers, trays and bags of food count as food. Flag only clear mismatches.",
+        "You check delivery photos for a food-rescue app. Be fair: containers, trays and bags of food count as food. " +
+        "One photo rarely shows the whole delivery, so a smaller amount than listed, or only some of the dishes, is not a mismatch. " +
+        "Flag only clear problems: no food at all, a clearly different kind of food, or a screenshot or picture of a screen.",
       output: Output.object({ schema: photoCheckSchema }),
       messages: [
         {
