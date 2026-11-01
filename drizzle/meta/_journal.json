@@ -15,6 +15,13 @@
       "when": 1793515187827,
       "tag": "0001_donation_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793545980957,
+      "tag": "0002_subscriptions_invoices_tracking",
+      "breakpoints": true
     }
   ]
 }

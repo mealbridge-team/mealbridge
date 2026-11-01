@@ -183,6 +183,11 @@ export const trips = pgTable(
     verification: jsonb("verification").$type<Verification>(),
     payoutBatchId: text("payout_batch_id"),
     paidAt: timestamp("paid_at", { withTimezone: true }),
+    // Light live tracking: the driver's last shared position while the trip is on the road.
+    lastLat: doublePrecision("last_lat"),
+    lastLng: doublePrecision("last_lng"),
+    lastPositionAt: timestamp("last_position_at", { withTimezone: true }),
+    positionSimulated: boolean("position_simulated").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [index("trips_status_idx").on(t.status)],
@@ -263,6 +268,31 @@ export const paypalEvents = pgTable("paypal_events", {
   payload: jsonb("payload").notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
   receivedAt: createdAt(),
+});
+
+// A PayPal invoice sent to a sponsor or city grant. Paid money lands in the sponsor's pool.
+export const sponsorInvoices = pgTable("sponsor_invoices", {
+  id: id(),
+  sponsorId: text("sponsor_id")
+    .notNull()
+    .references(() => sponsors.id),
+  poolId: text("pool_id")
+    .notNull()
+    .references(() => fundingPools.id),
+  amountCents: integer("amount_cents").notNull(),
+  memo: text("memo").notNull(),
+  paypalInvoiceId: text("paypal_invoice_id").notNull().unique(),
+  invoiceNumber: text("invoice_number").notNull(),
+  payerViewUrl: text("payer_view_url"),
+  status: text("status").$type<"sent" | "paid" | "cancelled">().notNull().default("sent"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  createdAt: createdAt(),
+});
+
+// Small key/value store for ids created once in PayPal, e.g. the compliance plan's billing plan.
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
 });
 
 export const needs = pgTable("needs", {

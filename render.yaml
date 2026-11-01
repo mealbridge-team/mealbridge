@@ -33,6 +33,11 @@ services:
         sync: false
       - key: DEMO_DRIVER_3_EMAIL
         sync: false
+      - key: DEMO_SPONSOR_EMAIL
+        sync: false
+      # AG Studio trial licence (from AG Grid). Read at build time, so redeploy after setting it.
+      - key: NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY
+        sync: false
 
 databases:
   - name: mealbridge-db

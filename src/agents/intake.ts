@@ -58,7 +58,7 @@ export async function readSurplus(input: IntakeInput): Promise<{ reading: Intake
     if (!input.notes.trim()) throw new IntakeUnavailableError();
     return { reading: demoReading(input.notes), mode: "demo" as const };
   };
-  if (aiMode() === "demo" || !takeAiCall()) return fallback();
+  if (aiMode() === "demo" || !(await takeAiCall())) return fallback();
 
   const content: ({ type: "text"; text: string } | { type: "file"; mediaType: string; data: Uint8Array })[] = [
     { type: "text", text: `Restaurant note: ${input.notes || "(none)"}` },

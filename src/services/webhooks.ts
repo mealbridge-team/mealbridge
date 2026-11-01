@@ -4,6 +4,8 @@ import { paypalEvents } from "@/db/schema";
 import { paypalValueToCents } from "@/domain/stipend";
 import { decodeCustomId } from "@/paypal/custom-id";
 import { receiveDonation } from "./donations";
+import { handleInvoiceEvent } from "./invoices";
+import { handleSubscriptionEvent } from "./subscriptions";
 import { flagUnclaimedPayout, settlePayout } from "./treasury";
 
 export { decodeCustomId, encodeCustomId } from "@/paypal/custom-id";
@@ -54,6 +56,10 @@ export async function processPayPalEvent(db: Db, event: PayPalEvent): Promise<"p
     if (payoutTripId) await settlePayout(db, payoutTripId, "failed");
   } else if (event.event_type === "PAYMENT.PAYOUTS-ITEM.UNCLAIMED") {
     if (payoutTripId) await flagUnclaimedPayout(db, payoutTripId);
+  } else if (event.event_type.startsWith("BILLING.SUBSCRIPTION.") || event.event_type === "PAYMENT.SALE.COMPLETED") {
+    handled = await handleSubscriptionEvent(db, event.event_type, r as Parameters<typeof handleSubscriptionEvent>[2]);
+  } else if (event.event_type.startsWith("INVOICING.INVOICE.")) {
+    handled = await handleInvoiceEvent(db, event.event_type, r);
   } else {
     handled = false;
   }

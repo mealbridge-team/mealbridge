@@ -11,7 +11,7 @@ import Link from "next/link";
 export default function DonatePage({ searchParams }: PageProps<"/donate">) {
   return (
     <>
-      <PageTitle title="Sponsor a rescue" subtitle="Every dollar is tied to a delivery you can see. Drivers are reimbursed from it the moment food arrives." />
+      <PageTitle eyebrow="For donors" title="Fund a rescue tonight" subtitle="Every dollar reimburses a volunteer driver's fuel for a delivery you can see. Nothing goes to overhead." />
       <Suspense fallback={<Card><Skeleton lines={6} /></Card>}>
         <DonateView searchParams={searchParams} />
       </Suspense>
@@ -53,7 +53,7 @@ async function DonateView({ searchParams }: { searchParams: PageProps<"/donate">
                   <span>
                     {w.listing.totalPortions} portions in {AREA_LABEL[w.restaurant.area]} · <Money cents={w.trip.stipendCents} />
                   </span>
-                  <Link href={`/donate?trip=${w.trip.id}`} className="rounded-full bg-leaf px-3 py-1 text-xs font-semibold text-white">
+                  <Link href={`/donate?trip=${w.trip.id}`} className="rounded-full bg-tomato px-3 py-1 text-xs font-semibold text-white">
                     Fund this
                   </Link>
                 </li>

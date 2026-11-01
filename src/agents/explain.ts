@@ -4,10 +4,10 @@ import { geminiModel, takeAiCall } from "@/ai/model";
 // Short, human explanations of decisions the code already made. The model never changes
 // the decision; if it fails or is unavailable we keep the template sentence.
 export async function explain(task: string, facts: Record<string, unknown>, fallback: string): Promise<string> {
-  if (!takeAiCall()) return fallback;
+  if (!(await takeAiCall("fast"))) return fallback;
   try {
     const { text } = await generateText({
-      model: geminiModel(),
+      model: geminiModel("fast"),
       system:
         "You write one plain sentence (max 25 words) for a food-rescue coordinator app. Use only the facts given. No greetings, no emojis.",
       prompt: `${task}\nFacts: ${JSON.stringify(facts)}`,

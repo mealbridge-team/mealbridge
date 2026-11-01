@@ -1,6 +1,7 @@
 // Resets the database to the demo state: one Bay Area evening. All businesses, shelters and
 // people below are fictional. Run with `npm run setup`.
 import { sql } from "drizzle-orm";
+import { seedHistory } from "./history";
 import { getDb, runMigrations, type Db } from "./index";
 import {
   alerts,
@@ -21,7 +22,7 @@ import {
 
 export async function resetDemoData(db: Db) {
   await db.execute(
-    sql`truncate table alerts, paypal_events, ledger_entries, reservations, trips, matches, listings,
+    sql`truncate table alerts, paypal_events, sponsor_invoices, ledger_entries, reservations, trips, matches, listings,
         needs, funding_pools, sponsors, donors, drivers, shelters, restaurants restart identity cascade`,
   );
 
@@ -235,6 +236,8 @@ export async function resetDemoData(db: Db) {
     { shelterId: harbor.id, item: "Infant formula (powder)", quantity: 6, urgency: "high" },
     { shelterId: harbor.id, item: "Hygiene kits", quantity: 20, urgency: "medium" },
   ]);
+
+  await seedHistory(db);
 
   return { restaurants: { lakeside, saffron, telegraph, mission } };
 }

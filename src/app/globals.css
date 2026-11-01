@@ -1,36 +1,44 @@
 @import "tailwindcss";
 
+/* Warm and human: a food-rescue cause, not a fintech dashboard. Off-white paper, deep green for
+   "rescued", tomato for "needs a hand", amber for waiting. */
 :root {
-  --cream: #fbf7f0;
-  --paper: #ffffff;
-  --ink: #1d2a23;
-  --muted: #5f6b64;
-  --line: #e7e0d4;
-  --leaf: #1f6f4a;
-  --leaf-soft: #e3f1e9;
-  --saffron: #e8912d;
-  --saffron-soft: #fdf0dc;
-  --berry: #b5383d;
-  --berry-soft: #fbe7e6;
-  --sky: #2f6fb0;
-  --sky-soft: #e5eff9;
+  --cream: #f8f3ea;
+  --paper: #fffdf9;
+  --ink: #1e2a23;
+  --muted: #6c675d;
+  --line: #e8dfcf;
+  --leaf: #1d5c40;
+  --leaf-soft: #e2eee5;
+  --tomato: #d4502c;
+  --tomato-soft: #fbe5dc;
+  --saffron: #b7791a;
+  --saffron-soft: #faefd8;
+  --berry: #b0353a;
+  --berry-soft: #f9e3e2;
+  --sky: #2b6693;
+  --sky-soft: #e2edf6;
+  --shadow: 0 1px 2px rgb(60 40 10 / 0.05), 0 8px 24px -12px rgb(60 40 10 / 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --cream: #141a17;
-    --paper: #1c2420;
-    --ink: #eef2ef;
-    --muted: #a3afa8;
-    --line: #2e3a34;
-    --leaf: #5fc08e;
-    --leaf-soft: #1d3428;
-    --saffron: #f3ab55;
-    --saffron-soft: #3a2c19;
-    --berry: #ef7f82;
-    --berry-soft: #3b2224;
-    --sky: #7fb2e6;
-    --sky-soft: #1c2b3b;
+    --cream: #15130f;
+    --paper: #1e1b16;
+    --ink: #f1ece2;
+    --muted: #a8a094;
+    --line: #34302a;
+    --leaf: #6cc496;
+    --leaf-soft: #1b3226;
+    --tomato: #f08a68;
+    --tomato-soft: #3d231a;
+    --saffron: #e6b45a;
+    --saffron-soft: #382c16;
+    --berry: #ef8487;
+    --berry-soft: #3b2223;
+    --sky: #86b8e2;
+    --sky-soft: #1a2a39;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
 }
 
@@ -42,12 +50,15 @@
   --color-line: var(--line);
   --color-leaf: var(--leaf);
   --color-leaf-soft: var(--leaf-soft);
+  --color-tomato: var(--tomato);
+  --color-tomato-soft: var(--tomato-soft);
   --color-saffron: var(--saffron);
   --color-saffron-soft: var(--saffron-soft);
   --color-berry: var(--berry);
   --color-berry-soft: var(--berry-soft);
   --color-sky: var(--sky);
   --color-sky-soft: var(--sky-soft);
+  --shadow-card: var(--shadow);
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-fraunces);
 }
@@ -55,4 +66,25 @@
 body {
   background: var(--cream);
   color: var(--ink);
+}
+
+/* Leaflet markers drawn with HTML so there are no image assets to ship. */
+.mb-pin {
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid var(--paper);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  color: white;
+  font-size: 14px;
+}
+.mb-pin-driver {
+  animation: mb-pulse 2s ease-out infinite;
+}
+@keyframes mb-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(212 80 44 / 0.45); }
+  100% { box-shadow: 0 0 0 14px rgb(212 80 44 / 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mb-pin-driver { animation: none; }
 }

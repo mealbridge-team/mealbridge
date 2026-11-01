@@ -48,7 +48,7 @@ function minutesOfDay(hhmm: string) {
   return h * 60 + m;
 }
 
-function localMinutes(date: Date) {
+export function localMinutes(date: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: SHELTER_TIME_ZONE,
     hour: "2-digit",
@@ -74,6 +74,8 @@ export function rankShelters(
   listing: MatchListing,
   shelters: MatchShelter[],
   now: Date,
+  // Added to the arrival time for the opening-hours check only (see lib/clock.ts).
+  hoursShiftMs = 0,
 ): { ranked: RankedShelter[]; rejected: Rejection[] } {
   const ranked: RankedShelter[] = [];
   const rejected: Rejection[] = [];
@@ -98,7 +100,7 @@ export function rankShelters(
       rejected.push({ shelterId: shelter.id, reason: "Too far to arrive while the food is safe" });
       continue;
     }
-    if (!isOpenAt(shelter, arrival)) {
+    if (!isOpenAt(shelter, new Date(arrival.getTime() + hoursShiftMs))) {
       rejected.push({ shelterId: shelter.id, reason: "Closed at arrival time" });
       continue;
     }

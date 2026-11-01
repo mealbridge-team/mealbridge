@@ -60,11 +60,16 @@ export async function receiveDonation(
   });
   if (!isNew) return { funded: [] as string[] };
 
+  return { funded: await fundAndDispatch(db, input.tripId) };
+}
+
+// New money arrived: fund the chosen trip first, then every waiting trip, and send drivers.
+export async function fundAndDispatch(db: Db, tripId?: string | null) {
   const funded: string[] = [];
-  if (input.tripId && (await fundTrip(db, input.tripId)).funded) funded.push(input.tripId);
+  if (tripId && (await fundTrip(db, tripId)).funded) funded.push(tripId);
   funded.push(...(await fundWaitingTrips(db)));
-  for (const tripId of funded) await dispatchTrip(db, tripId);
-  return { funded };
+  for (const id of funded) await dispatchTrip(db, id);
+  return funded;
 }
 
 export async function completeDonation(db: Db, orderId: string) {

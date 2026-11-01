@@ -146,3 +146,19 @@ describe("treasurer allocation", () => {
     expect(stipendCents(500)).toBe(1500);
   });
 });
+
+describe("demo evening clock", () => {
+  it("moves daytime into the 7pm hour and leaves evenings alone", async () => {
+    const { demoEveningShiftMs } = await import("@/lib/clock");
+    const previous = process.env.DEMO_EVENING;
+    process.env.DEMO_EVENING = "on";
+    try {
+      const morning = new Date("2026-11-05T15:20:00Z"); // 7:20am in California
+      const shifted = new Date(morning.getTime() + demoEveningShiftMs(morning));
+      expect(isOpenAt({ opensAt: "17:00", closesAt: "23:00" }, shifted)).toBe(true);
+      expect(demoEveningShiftMs(new Date("2026-11-06T03:30:00Z"))).toBe(0); // 7:30pm
+    } finally {
+      process.env.DEMO_EVENING = previous;
+    }
+  });
+});

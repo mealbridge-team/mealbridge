@@ -15,7 +15,7 @@ export async function checkDropoffPhoto(
   photo: { data: Uint8Array; mediaType: string },
   listingSummary: string,
 ): Promise<PhotoCheck | null> {
-  if (!takeAiCall()) return null;
+  if (!(await takeAiCall())) return null;
   try {
     const { output } = await generateText({
       model: geminiModel(),

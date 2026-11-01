@@ -4,6 +4,7 @@ import { alerts, drivers, listings, matches, restaurants, shelters, trips, type 
 import { explain } from "@/agents/explain";
 import { rankShelters } from "@/domain/matcher";
 import { stipendCents } from "@/domain/stipend";
+import { demoEveningShiftMs } from "@/lib/clock";
 import { driveMinutes, roadKm } from "@/lib/geo";
 import { fundTrip, releaseTrip } from "./treasury";
 
@@ -54,6 +55,7 @@ export async function matchListing(db: Db, listingId: string, now = new Date()):
     },
     allShelters.map((s) => ({ ...s, incomingPortions: incoming.get(s.id) ?? 0 })),
     now,
+    demoEveningShiftMs(now),
   );
 
   if (ranked.length === 0) {
