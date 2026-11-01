@@ -15,8 +15,10 @@ No sign-up. The dark bar at the top switches between the four sides of the app.
 1. **Restaurant:** type a note such as "about 30 portions of veg biryani, kept hot, ready till 10pm"
    and press **Post surplus**. Gemini reads it, the food-safety rules check it, a shelter is matched
    and the trip's money is reserved. A driver is booked.
-2. **Driver:** opens on the driver who got the job. Press **Demo: simulate the drive**, add any
-   photo, press **Picked up**, then on the next leg **Demo: I'm at the shelter** and **Delivered**.
+2. **Driver:** opens on the driver who got the job. Press **Demo: simulate the drive**, add a
+   photo of food (any food photo works), press **Picked up**, then on the next leg add a different
+   food photo, press **Demo: I'm at the shelter** and **Delivered**. Gemini checks the drop-off
+   photo: one that shows no food is held for a coordinator instead of paid.
 3. **Shelter:** watch the car on the live map, then press **Received**. Photo, GPS and the shelter's
    tap agree, so PayPal Payouts reimburses the driver.
 4. **Impact:** the public dashboard (AG Studio). Press **Ask the Insights agent** and try a prompt.
