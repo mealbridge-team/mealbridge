@@ -94,6 +94,29 @@ export async function createPayout(input: {
   return { batchId: res.batch_header.payout_batch_id, itemId: null };
 }
 
+export type PayoutItemStatus =
+  | "SUCCESS"
+  | "PENDING"
+  | "UNCLAIMED"
+  | "ONHOLD"
+  | "FAILED"
+  | "RETURNED"
+  | "BLOCKED"
+  | "REFUNDED"
+  | "REVERSED"
+  | "DENIED";
+
+// Asks PayPal for a payout's state directly, so the ledger settles even if a webhook never arrives
+// (or before webhooks are set up, when running locally).
+export async function getPayoutItemStatus(batchId: string): Promise<PayoutItemStatus | null> {
+  if (paypalMode() === "mock" || batchId.startsWith("MOCK-")) return "SUCCESS";
+  const res = await paypalFetch<{ items?: { transaction_status: PayoutItemStatus }[] }>(
+    `/v1/payments/payouts/${batchId}`,
+    { method: "GET" },
+  );
+  return res.items?.[0]?.transaction_status ?? null;
+}
+
 // Rejects forged webhooks: PayPal checks the signature headers against our webhook id.
 export async function verifyWebhookSignature(headers: Headers, event: unknown): Promise<boolean> {
   if (paypalMode() === "mock") return true;

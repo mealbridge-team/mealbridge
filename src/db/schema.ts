@@ -239,6 +239,23 @@ export const ledgerEntries = pgTable(
   ],
 );
 
+// A donor checkout we created. The amount and destination live here, never in the browser.
+export const donationOrders = pgTable("donation_orders", {
+  orderId: text("order_id").primaryKey(),
+  poolId: text("pool_id")
+    .notNull()
+    .references(() => fundingPools.id),
+  donorId: text("donor_id")
+    .notNull()
+    .references(() => donors.id),
+  amountCents: integer("amount_cents").notNull(),
+  // Optional: the specific unfunded trip the donor chose to cover.
+  tripId: text("trip_id").references(() => trips.id),
+  status: text("status").$type<"created" | "captured" | "failed">().notNull().default("created"),
+  captureId: text("capture_id"),
+  createdAt: createdAt(),
+});
+
 // Raw PayPal webhook events, keyed by PayPal's event id for idempotency.
 export const paypalEvents = pgTable("paypal_events", {
   id: text("id").primaryKey(),
@@ -263,7 +280,15 @@ export const needs = pgTable("needs", {
 export const alerts = pgTable("alerts", {
   id: id(),
   kind: text("kind")
-    .$type<"unfunded_trip" | "low_fund" | "late_driver" | "verification_failed" | "unsafe_listing">()
+    .$type<
+      | "unfunded_trip"
+      | "low_fund"
+      | "late_driver"
+      | "verification_failed"
+      | "unsafe_listing"
+      | "payout_failed"
+      | "payout_unclaimed"
+    >()
     .notNull(),
   message: text("message").notNull(),
   tripId: text("trip_id").references(() => trips.id),

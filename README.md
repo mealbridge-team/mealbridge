@@ -40,8 +40,28 @@ notes with simple rules. `GET /api/health` shows which mode each part is in. To 
 services, copy `.env.example` to `.env.local` and fill in a Gemini key and PayPal sandbox credentials.
 
 ```bash
-npm test        # food-safety, matching and funding rules, plus the money loop end to end
+npm test          # safety, matching and funding rules, plus whole rescues end to end
+npm run check:keys  # confirms your Gemini and PayPal keys work (never prints them)
 ```
+
+### PayPal sandbox setup
+
+The app's REST app must belong to a **US sandbox business account**. PayPal refuses payouts from
+accounts in some countries (`PAYOUT_NOT_AVAILABLE`), and a sandbox business account defaults to
+the developer's own country. In the developer dashboard: Sandbox Accounts, create a Business
+account with country United States, then create the REST app under that account and enable Payouts.
+
+## Deploy on Render
+
+`render.yaml` is a Render Blueprint: a Node web service plus a Postgres database. In Render choose
+**New → Blueprint**, pick this repo, and fill in the secret values it asks for (the same ones as
+`.env.local`, plus `DEMO_PASSCODE`). On first start the app creates its tables and loads the demo
+evening. Then add a PayPal sandbox webhook pointing at `https://<your-app>.onrender.com/api/paypal/webhook`
+and set `PAYPAL_WEBHOOK_ID`.
+
+On the public demo, the coordinator's actions are behind `DEMO_PASSCODE`; restaurant, driver,
+shelter and donor screens are open so anyone can run a rescue. Posting is rate-limited per visitor,
+and Gemini calls have a daily cap after which the agents fall back to rules (labelled in the UI).
 
 ## Food safety rules (assumptions)
 
@@ -59,8 +79,19 @@ This is a prototype, not legal guidance.
 
 ## AI tools used
 
-- **Google Gemini Flash** (via the Vercel AI SDK): reads the restaurant's photo and note into a
-  structured listing (portions, allergens, diet tags, holding).
+All AI runs on **Google Gemini Flash** through the Vercel AI SDK. Decisions about money and food
+safety are made by plain code; the models handle messy input and explanations, and can only send
+something to a human, never approve it.
+
+- **Intake agent:** reads the restaurant's photo and note (any language) into a structured listing:
+  portions, allergens, diet tags, how the food is held.
+- **Matcher agent:** the shelter is chosen by a deterministic score (diet rules, capacity, distance,
+  opening hours); Gemini writes the one-line reason shown to the coordinator and restaurant.
+- **Dispatch agent:** books the nearest free driver once a trip is funded, and re-plans when a
+  driver drops out.
+- **Verification agent:** Gemini checks the drop-off photo against the listing. A payout needs three
+  signals: photo, GPS near the shelter, and the shelter's confirmation. Fewer goes to a coordinator.
+- **Treasurer:** reserves each trip's money before dispatch and pays the driver with PayPal Payouts.
 
 ## License
 

@@ -94,8 +94,9 @@ describe("trip funding and payout", () => {
     };
 
     expect(await processPayPalEvent(db, event)).toBe("processed");
+    // The donation funds the waiting trip and Dispatch books a driver straight away.
     const [funded] = await db.select().from(trips).where(eq(trips.id, trip.id));
-    expect(funded.status).toBe("funded");
+    expect(funded.status).toBe("assigned");
 
     expect(await processPayPalEvent(db, event)).toBe("duplicate");
     const ins = await db.select().from(ledgerEntries).where(eq(ledgerEntries.paypalRef, "CAPTURE-1"));

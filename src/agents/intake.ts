@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { aiMode, geminiModel } from "@/ai/model";
+import { aiMode, geminiModel, takeAiCall } from "@/ai/model";
 import { FOOD_CATEGORIES } from "@/domain/food-safety";
 
 export const ALLERGENS = [
@@ -52,20 +52,38 @@ From a photo and/or the restaurant's note (any language), estimate what the food
 - You do not approve food. Safety rules run after you.`;
 
 export async function readSurplus(input: IntakeInput): Promise<{ reading: IntakeReading; mode: "gemini" | "demo" }> {
-  if (aiMode() === "demo") return { reading: demoReading(input.notes), mode: "demo" };
+  // Rules can read a typed note, but can't guess what's in a photo. Without the AI, a photo-only
+  // listing has to ask for a note instead of inventing one.
+  const fallback = () => {
+    if (!input.notes.trim()) throw new IntakeUnavailableError();
+    return { reading: demoReading(input.notes), mode: "demo" as const };
+  };
+  if (aiMode() === "demo" || !takeAiCall()) return fallback();
 
   const content: ({ type: "text"; text: string } | { type: "file"; mediaType: string; data: Uint8Array })[] = [
     { type: "text", text: `Restaurant note: ${input.notes || "(none)"}` },
   ];
   if (input.photo) content.push({ type: "file", mediaType: input.photo.mediaType, data: input.photo.data });
 
-  const { output } = await generateText({
-    model: geminiModel(),
-    system: SYSTEM,
-    output: Output.object({ schema: intakeSchema }),
-    messages: [{ role: "user", content }],
-  });
-  return { reading: output, mode: "gemini" };
+  try {
+    const { output } = await generateText({
+      model: geminiModel(),
+      system: SYSTEM,
+      output: Output.object({ schema: intakeSchema }),
+      messages: [{ role: "user", content }],
+    });
+    return { reading: output, mode: "gemini" };
+  } catch (err) {
+    // Quota exhausted or Gemini down: keep the rescue moving on the note alone.
+    console.warn("Intake fell back to rules", err);
+    return fallback();
+  }
+}
+
+export class IntakeUnavailableError extends Error {
+  constructor() {
+    super("The AI can't read photos right now. Add a short note, e.g. \"30 portions pasta, kept hot\".");
+  }
 }
 
 // Without a Gemini key, read the note with simple rules so the flow still works end to end.

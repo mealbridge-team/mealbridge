@@ -14,7 +14,7 @@ import {
 } from "@/db/schema";
 import { allocateTrip, type PoolBalance } from "@/domain/treasurer";
 import { formatUsd } from "@/domain/stipend";
-import { createPayout, type PayoutReceiver } from "@/paypal/api";
+import { createPayout, getPayoutItemStatus, type PayoutReceiver } from "@/paypal/api";
 import { paypalMode } from "@/paypal/client";
 
 // Available = money in (completed) - money out (pending or completed) - money held for trips.
@@ -212,10 +212,51 @@ export async function settlePayout(db: Db, tripId: string, outcome: "completed" 
     .where(and(eq(reservations.tripId, tripId), eq(reservations.status, "paid")));
   await db.update(trips).set({ status: "verified" }).where(eq(trips.id, tripId));
   await db.insert(alerts).values({
-    kind: "verification_failed",
+    kind: "payout_failed",
     tripId,
     message: "PayPal couldn't deliver a driver payout. Check the driver's PayPal or Venmo details.",
   });
+}
+
+// The driver has no PayPal account on that email/phone yet. PayPal holds the money for 30 days,
+// then returns it (which arrives as a failed payout).
+export async function flagUnclaimedPayout(db: Db, tripId: string) {
+  const [open] = await db
+    .select({ id: alerts.id })
+    .from(alerts)
+    .where(and(eq(alerts.tripId, tripId), eq(alerts.kind, "payout_unclaimed")));
+  if (open) return;
+  await db.insert(alerts).values({
+    kind: "payout_unclaimed",
+    tripId,
+    message: "A driver's payout is waiting: they need to sign up to PayPal with the email we paid.",
+  });
+}
+
+const FAILED_STATUSES = new Set(["FAILED", "RETURNED", "BLOCKED", "REFUNDED", "REVERSED", "DENIED"]);
+
+// Catches up any payouts still pending by asking PayPal directly.
+export async function refreshPendingPayouts(db: Db): Promise<number> {
+  const pending = await db
+    .select({ id: trips.id, batchId: trips.payoutBatchId })
+    .from(trips)
+    .where(eq(trips.status, "payout_pending"));
+
+  let settled = 0;
+  for (const { id, batchId } of pending) {
+    if (!batchId) continue;
+    const status = await getPayoutItemStatus(batchId);
+    if (status === "SUCCESS") {
+      await settlePayout(db, id, "completed");
+      settled++;
+    } else if (status && FAILED_STATUSES.has(status)) {
+      await settlePayout(db, id, "failed");
+      settled++;
+    } else if (status === "UNCLAIMED") {
+      await flagUnclaimedPayout(db, id);
+    }
+  }
+  return settled;
 }
 
 // A cancelled trip gives its reserved money back to the pools.

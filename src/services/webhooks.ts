@@ -2,7 +2,11 @@ import { eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { paypalEvents } from "@/db/schema";
 import { paypalValueToCents } from "@/domain/stipend";
-import { fundWaitingTrips, recordIncoming, settlePayout } from "./treasury";
+import { decodeCustomId } from "@/paypal/custom-id";
+import { receiveDonation } from "./donations";
+import { flagUnclaimedPayout, settlePayout } from "./treasury";
+
+export { decodeCustomId, encodeCustomId } from "@/paypal/custom-id";
 
 export type PayPalEvent = {
   id: string;
@@ -14,21 +18,6 @@ export type PayPalEvent = {
     payout_item?: { sender_item_id?: string };
   };
 };
-
-// custom_id on every order: "pool:<poolId>;donor:<donorId>" (donor optional).
-export function encodeCustomId(tag: { poolId: string; donorId?: string }) {
-  return tag.donorId ? `pool:${tag.poolId};donor:${tag.donorId}` : `pool:${tag.poolId}`;
-}
-
-export function decodeCustomId(customId: string): { poolId?: string; donorId?: string } {
-  const out: { poolId?: string; donorId?: string } = {};
-  for (const part of customId.split(";")) {
-    const [key, value] = part.split(":");
-    if (key === "pool") out.poolId = value;
-    if (key === "donor") out.donorId = value;
-  }
-  return out;
-}
 
 const PAYOUT_FAILED = new Set([
   "PAYMENT.PAYOUTS-ITEM.FAILED",
@@ -47,25 +36,24 @@ export async function processPayPalEvent(db: Db, event: PayPalEvent): Promise<"p
 
   let handled = true;
   const r = event.resource;
+  const payoutTripId = r.payout_item?.sender_item_id;
 
   if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
     const tag = decodeCustomId(r.custom_id ?? "");
     if (tag.poolId && r.id && r.amount) {
-      const isNew = await recordIncoming(db, {
+      await receiveDonation(db, {
         poolId: tag.poolId,
         donorId: tag.donorId,
         amountCents: paypalValueToCents(r.amount.value),
-        source: "donation",
-        paypalRef: r.id,
+        captureId: r.id,
       });
-      if (isNew) await fundWaitingTrips(db);
     }
   } else if (event.event_type === "PAYMENT.PAYOUTS-ITEM.SUCCEEDED") {
-    const tripId = r.payout_item?.sender_item_id;
-    if (tripId) await settlePayout(db, tripId, "completed");
+    if (payoutTripId) await settlePayout(db, payoutTripId, "completed");
   } else if (PAYOUT_FAILED.has(event.event_type)) {
-    const tripId = r.payout_item?.sender_item_id;
-    if (tripId) await settlePayout(db, tripId, "failed");
+    if (payoutTripId) await settlePayout(db, payoutTripId, "failed");
+  } else if (event.event_type === "PAYMENT.PAYOUTS-ITEM.UNCLAIMED") {
+    if (payoutTripId) await flagUnclaimedPayout(db, payoutTripId);
   } else {
     handled = false;
   }

@@ -1,0 +1,42 @@
+# Render Blueprint: one web service and one Postgres database.
+# Paid plans on purpose: free Postgres expires after 30 days (before judging ends) and free web
+# services sleep when idle. Both are covered by the hackathon's Render credit.
+services:
+  - type: web
+    name: mealbridge
+    runtime: node
+    plan: 0.5c-512mb
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mealbridge-db
+          property: connectionString
+      # Secrets: Render asks for these values when the Blueprint is created.
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: DEMO_PASSCODE
+        sync: false
+      - key: DEMO_DRIVER_1_EMAIL
+        sync: false
+      - key: DEMO_DRIVER_3_EMAIL
+        sync: false
+
+databases:
+  - name: mealbridge-db
+    plan: 0.1c-256mb
+    region: oregon
+    databaseName: mealbridge
+    user: mealbridge

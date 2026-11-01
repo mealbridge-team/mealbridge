@@ -81,7 +81,7 @@ export async function resetDemoData(db: Db) {
       name: "Haven House",
       area: "oakland",
       publicLabel: "Oakland, East",
-      address: "Address shared with assigned driver only",
+      address: "Hillcrest Rd (private), Oakland, CA",
       lat: 37.7749,
       lng: -122.2241,
       confidential: true,
@@ -240,6 +240,9 @@ export async function resetDemoData(db: Db) {
 }
 
 async function main() {
+  // Pick up DEMO_DRIVER_* (and DATABASE_URL) from .env.local, as the Next.js app does.
+  const { loadEnvConfig } = await import("@next/env");
+  loadEnvConfig(process.cwd());
   const db = getDb();
   await runMigrations(db);
   await resetDemoData(db);
