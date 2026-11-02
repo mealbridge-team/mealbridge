@@ -5,6 +5,8 @@ volunteer who drives it there before they get home. Built for the PayPal AI Hack
 
 **Live demo:** https://mealbridge-6py5.onrender.com
 
+**Demo video (2:45):** https://youtu.be/ySyRben_cPo
+
 > Hackathon prototype. All money is PayPal **sandbox** money, and every business, shelter and
 > person in the demo is fictional. The demo is set in the San Francisco Bay Area.
 

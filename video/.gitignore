@@ -1,0 +1,8 @@
+node_modules/
+out/
+.env
+capture/raw/
+public/clips/
+public/music.wav
+public/vo-*
+src/*.gen.json

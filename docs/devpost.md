@@ -100,4 +100,4 @@ match explanations, sponsor reminder drafts, and the Insights agent on the impac
   the bottom of the screen walks you through one rescue in about two minutes.
 - Coordinator passcode for judges: (add it here, not in the public repo)
 - Repo: (public GitHub URL)
-- Video: (public YouTube URL, under 3 minutes)
+- Video: https://youtu.be/ySyRben_cPo

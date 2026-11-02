@@ -1,0 +1,25 @@
+{
+  "name": "mealbridge-video",
+  "private": true,
+  "description": "Submission video for MealBridge, built with Remotion",
+  "scripts": {
+    "capture": "node capture/record.mjs",
+    "voice": "node make-voice.mjs",
+    "studio": "node find-audio.mjs && remotion studio",
+    "thumbnail": "node find-audio.mjs && remotion still src/index.ts Thumbnail out/thumbnail.png",
+    "render": "node find-audio.mjs && remotion render src/index.ts MealBridge out/mealbridge-demo.mp4 --codec h264 --crf 18"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.535",
+    "@remotion/google-fonts": "4.0.535",
+    "@remotion/transitions": "4.0.535",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.535"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "playwright": "1.56.1",
+    "typescript": "^5"
+  }
+}

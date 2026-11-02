@@ -1,5 +1,10 @@
 # Demo video script (target 2:45, hard limit under 3:00)
 
+The submission video is now built in code: `video/` is a Remotion project with real footage of the
+app (`npm --prefix video run capture`), the narration in `video/VOICEOVER.md`
+(`npm --prefix video run voice`) and `npm --prefix video run render`. The plan below is the
+original hand-recorded version, kept for reference.
+
 Record at 1440×900 in the browser, one tab per screen, with the demo freshly reset (Coordinator →
 Reset the demo data). Use royalty-free background music or none. Speak calmly; each scene lists the
 voice-over and what to show.
