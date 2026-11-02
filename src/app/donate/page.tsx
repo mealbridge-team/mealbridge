@@ -6,6 +6,7 @@ import { tripViews } from "@/lib/queries";
 import { paypalMode } from "@/paypal/client";
 import { poolBalances } from "@/services/treasury";
 import { AREA_LABEL, buttonClass, Container, Empty, Money, PageHeader, Panel, Skeleton, smallButton } from "@/components/ui";
+import { PageArt } from "@/components/page-art";
 import { DonateForm } from "./donate-form";
 
 export const metadata = { title: "Donate" };
@@ -13,7 +14,7 @@ export const metadata = { title: "Donate" };
 export default function DonatePage({ searchParams }: PageProps<"/donate">) {
   return (
     <Container size="app">
-      <PageHeader
+      <PageHeader art={<PageArt page="donate" />}
         kicker="Donate"
         title="Fund a rescue tonight"
         description="Every dollar reimburses a volunteer driver's fuel for a delivery you can see on the impact dashboard. Nothing goes to overhead."

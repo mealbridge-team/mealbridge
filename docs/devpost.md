@@ -34,8 +34,9 @@ A restaurant snaps a photo or types a note. Agents take it from there:
   through a PayPal invoice they can pay straight away.
 - **Shelters** can pause deliveries for the night or change how much they can take, and **drivers**
   go on and off duty; the matcher and dispatch respect both.
-- A public **impact dashboard** built with AG Studio shows every meal, mile and dollar, and a custom
-  **Insights agent** answers questions and asks AG Studio's built-in agents to build new charts.
+- A public **impact page** shows every meal, mile and dollar: count-ups, an animated map of delivery
+  routes, AG Studio charts that cross-filter, and an **Insights agent** that answers questions from
+  the live ledger.
 
 Restaurants never pay per pickup: a fee at the moment they decide whether to bin the food works
 against donating.
@@ -48,10 +49,8 @@ against donating.
   verification; an idempotent ledger keyed on PayPal references so replays never double-count.
 - **AI:** Google Gemini 3.5 Flash-Lite through the Vercel AI SDK. Models only read messy input
   and explain decisions; money and food safety stay in deterministic, tested code.
-- **AG Studio:** the impact dashboard, themed to the app, with a custom Insights agent built on the
-  Studio Agent Framework. It uses Studio's own tools plus a live-operations tool of ours, delegates
-  chart-building to Studio's Lead agent, and runs through our own LLM adapter so the Gemini key never
-  reaches the browser.
+- **AG Studio:** the impact charts (weekly meals by area, who paid for the drives, money in and out,
+  funds right now), themed to the site and laid straight onto the page with cross-filtering.
 - **Render:** web service plus Postgres from a Blueprint.
 - **Leaflet and OpenStreetMap** for live tracking, with confidential shelters blurred on public maps.
 
@@ -71,7 +70,7 @@ against donating.
 - A full rescue runs end to end on the real PayPal sandbox: listing, match, funding, dispatch,
   live tracking, verification and a real payout.
 - Every agent can only escalate to a human, never approve money or unsafe food.
-- A custom agent working alongside AG Studio's built-in agents on live data.
+- An Insights agent that answers from live ledger data and never invents a figure.
 
 ## What we learned
 
@@ -92,8 +91,7 @@ openstreetmap, render
 ## AI tools field
 
 Google Gemini 3.5 Flash-Lite: vision for reading food photos and checking drop-off photos, plus
-match explanations, sponsor reminder drafts, and the AG Studio Insights agent and Studio's built-in
-agents, called through the Vercel AI SDK. Claude Code was used as a coding assistant.
+match explanations, sponsor reminder drafts, and the Insights agent on the impact page, called through the Vercel AI SDK. Claude Code was used as a coding assistant.
 
 ## Links
 

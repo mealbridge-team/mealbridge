@@ -11,9 +11,12 @@ import { isTonight } from "@/lib/clock";
 import { COMPLIANCE_PLAN_CENTS } from "@/services/subscriptions";
 import { paypalMode } from "@/paypal/client";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Picker } from "@/components/picker";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, buttonClass, Container, Empty, Money, Notice, PageHeader, Panel, RescueSteps, Skeleton, smallButton, timeLabel, type Tone } from "@/components/ui";
+import { DemoHandoff } from "@/components/demo-handoff";
+import { PageArt } from "@/components/page-art";
+import { personaId } from "@/lib/demo-session";
+import { PortalSignIn } from "@/app/demo/people";
 import { PostSurplusForm } from "./post-surplus-form";
 
 export const metadata = { title: "For restaurants" };
@@ -24,7 +27,7 @@ export default function RestaurantPage({ searchParams }: PageProps<"/restaurant"
       <Suspense
         fallback={
           <>
-            <PageHeader kicker="For restaurants" title="Post tonight's surplus" />
+            <PageHeader art={<PageArt page="restaurant" />} kicker="For restaurants" title="Post tonight's surplus" />
             <div className="py-8">
               <Skeleton lines={6} />
             </div>
@@ -52,7 +55,11 @@ async function RestaurantView({ searchParams }: { searchParams: PageProps<"/rest
   if (restaurants.length === 0) return <Empty>No restaurants yet. Run npm run setup to load the demo.</Empty>;
 
   const { r, plan } = await searchParams;
-  const restaurant = restaurants.find((x) => x.id === r) ?? restaurants[0];
+  // PayPal's subscription return names the restaurant in the URL; otherwise it's whoever is signed in.
+  const signedIn = typeof r === "string" ? r : await personaId("restaurant");
+  const restaurant = restaurants.find((x) => x.id === signedIn);
+  if (!restaurant)
+    return <PortalSignIn role="restaurant" header={<PageHeader art={<PageArt page="restaurant" />} kicker="For restaurants" title="Sign in to your restaurant" description="Choose a restaurant to post tonight's surplus as." />} />;
   const [recent, trips, pools] = await Promise.all([recentListings(db, restaurant.id), tripViews(db, { limit: 80 }), poolBalances(db)]);
   const listings = recent.filter((l) => isTonight(l.createdAt));
   const tripByListing = new Map(trips.map((t) => [t.listing.id, t]));
@@ -73,9 +80,7 @@ async function RestaurantView({ searchParams }: { searchParams: PageProps<"/rest
 
   return (
     <>
-      <PageHeader kicker="For restaurants" title="Post tonight's surplus" description="One photo or a short note. We find the shelter, the driver and the money for the trip.">
-        <Picker items={restaurants} selectedId={restaurant.id} param="r" path="/restaurant" />
-      </PageHeader>
+      <PageHeader art={<PageArt page="restaurant" />} kicker="For restaurants" title="Post tonight's surplus" description="One photo or a short note. We find the shelter, the driver and the money for the trip." />
 
       <div className="grid items-start gap-6 py-8 lg:grid-cols-[1.25fr_1fr]">
         <div className="space-y-6">
@@ -108,6 +113,9 @@ async function RestaurantView({ searchParams }: { searchParams: PageProps<"/rest
                             {trip.driver ? ` with ${trip.driver.anonymous ? "a volunteer" : trip.driver.name}` : ""}
                           </p>
                           <RescueSteps status={trip.trip.status} />
+                          {trip.driver && trip.trip.status === "assigned" && (
+                            <DemoHandoff role="driver" id={trip.driver.id} name={trip.driver.name} what="the driver picks it up next." />
+                          )}
                         </>
                       ) : l.safetyStatus === "rejected" ? (
                         <p className="text-sm text-bad">Not safe to rescue: {l.safetyReasons.join(" ")}</p>

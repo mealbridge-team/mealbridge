@@ -6,9 +6,12 @@ import { sponsors as sponsorsTable } from "@/db/schema";
 import { sponsorSimulatePayment } from "@/app/actions";
 import { sponsorOverview } from "@/services/sponsors";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Picker } from "@/components/picker";
+import { CountUp } from "@/components/motion";
 import { SubmitButton } from "@/components/submit-button";
 import { AREA_LABEL, Badge, buttonClass, Container, dateLabel, Empty, Money, PageHeader, Panel, Skeleton, smallButton } from "@/components/ui";
+import { PageArt } from "@/components/page-art";
+import { personaId } from "@/lib/demo-session";
+import { PortalSignIn } from "@/app/demo/people";
 import { TopUpForm } from "./top-up-form";
 
 export const metadata = { title: "For sponsors" };
@@ -19,7 +22,7 @@ export default function SponsorPage({ searchParams }: PageProps<"/sponsor">) {
       <Suspense
         fallback={
           <>
-            <PageHeader kicker="For sponsors and city grants" title="Your rescue fund" />
+            <PageHeader art={<PageArt page="sponsor" />} kicker="For sponsors and city grants" title="Your rescue fund" />
             <div className="py-8">
               <Skeleton lines={6} />
             </div>
@@ -39,7 +42,11 @@ async function SponsorView({ searchParams }: { searchParams: PageProps<"/sponsor
   if (sponsors.length === 0) return <Empty>No sponsors yet. Run npm run setup to load the demo.</Empty>;
 
   const { sp } = await searchParams;
-  const chosen = sponsors.find((x) => x.id === sp) ?? sponsors[0];
+  // The coordinator console links here with ?sp=; otherwise it's whoever is signed in.
+  const signedIn = typeof sp === "string" ? sp : await personaId("sponsor");
+  const chosen = sponsors.find((x) => x.id === signedIn);
+  if (!chosen)
+    return <PortalSignIn role="sponsor" header={<PageHeader art={<PageArt page="sponsor" />} kicker="For sponsors and city grants" title="Sign in to your fund" description="Choose a sponsor to see their fund, invoices and the rescues they paid for." />} />;
   const overview = await sponsorOverview(db, chosen.id);
   if (!overview) return <Empty>That sponsor no longer exists.</Empty>;
   const { sponsor, availableCents, areas, rescues, meals, spentCents, recent, invoices } = overview;
@@ -47,21 +54,19 @@ async function SponsorView({ searchParams }: { searchParams: PageProps<"/sponsor
 
   return (
     <>
-      <PageHeader
+      <PageHeader art={<PageArt page="sponsor" />}
         kicker={sponsor.kind === "city" ? "City food-recovery grant" : "Corporate sponsor"}
         title={sponsor.name}
         description={`Your fund pays volunteer drivers' fuel for rescues${areas.length ? ` in ${areas.map((a) => AREA_LABEL[a]).join(" and ")}` : " anywhere in the Bay Area"}. Every dollar goes to a delivery you can see.`}
-      >
-        <Picker items={sponsors} selectedId={sponsor.id} param="sp" path="/sponsor" />
-      </PageHeader>
+       />
 
       <div className="space-y-6 py-8">
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line lg:grid-cols-4">
           {[
-            [<Money key="a" cents={availableCents} />, "available in your fund"],
-            [rescues.toLocaleString("en-US"), "rescues funded"],
-            [meals.toLocaleString("en-US"), "meals in those rescues"],
-            [<Money key="s" cents={spentCents} />, "paid to volunteer drivers"],
+            [<CountUp key="a" value={availableCents} as="cents" />, "available in your fund"],
+            [<CountUp key="r" value={rescues} />, "rescues funded"],
+            [<CountUp key="m" value={meals} />, "meals in those rescues"],
+            [<CountUp key="s" value={spentCents} as="cents" />, "paid to volunteer drivers"],
           ].map(([value, label]) => (
             <div key={String(label)} className="bg-bg p-5 sm:p-6">
               <dt className="sr-only">{label}</dt>

@@ -3,7 +3,7 @@ import type { Db } from "@/db";
 import { drivers, fundingPools, ledgerEntries, listings, matches, reservations, restaurants, shelters, trips } from "@/db/schema";
 import { poolBalances } from "@/services/treasury";
 
-// Flat, public-safe rows for the AG Studio impact dashboard: shelter public labels only, no
+// Flat, public-safe rows for the impact page: shelter public labels only, no
 // addresses, and anonymous drivers stay anonymous.
 
 const POUNDS_PER_PORTION = 0.75;
@@ -49,6 +49,16 @@ export type RescueRow = {
   minutesToDeliver: number | null;
 };
 
+// Confidential shelters are drawn at their area's centre, never at their address.
+const AREA_CENTRE: Record<string, { lat: number; lng: number }> = {
+  oakland: { lat: 37.8044, lng: -122.2712 },
+  berkeley: { lat: 37.8715, lng: -122.273 },
+  "san-francisco": { lat: 37.7749, lng: -122.4194 },
+};
+
+export type MapPlace = { id: string; kind: "restaurant" | "shelter"; name: string; area: string; lat: number; lng: number };
+export type MapRoute = { from: string; to: string; trips: number; meals: number };
+
 export type MoneyRow = { date: string; week: string; direction: string; flow: string; fund: string; area: string; amountUsd: number };
 export type FundRow = { fund: string; kind: string; availableUsd: number };
 
@@ -71,6 +81,20 @@ export async function impactData(db: Db) {
   for (const f of funding) {
     const current = mainFunder.get(f.tripId);
     if (!current || f.amount > current.amount) mainFunder.set(f.tripId, f);
+  }
+
+  const places = new Map<string, MapPlace>();
+  const routes = new Map<string, MapRoute>();
+  for (const { trip, listing, restaurant, shelter } of tripRows) {
+    if (trip.status !== "paid" && trip.status !== "verified" && trip.status !== "payout_pending") continue;
+    places.set(restaurant.id, { id: restaurant.id, kind: "restaurant", name: restaurant.name, area: AREA[restaurant.area], lat: restaurant.lat, lng: restaurant.lng });
+    const spot = shelter.confidential ? AREA_CENTRE[shelter.area] : shelter;
+    places.set(shelter.id, { id: shelter.id, kind: "shelter", name: shelter.publicLabel, area: AREA[shelter.area], lat: spot.lat, lng: spot.lng });
+    const key = `${restaurant.id}>${shelter.id}`;
+    const route = routes.get(key) ?? { from: restaurant.id, to: shelter.id, trips: 0, meals: 0 };
+    route.trips++;
+    route.meals += listing.totalPortions;
+    routes.set(key, route);
   }
 
   const rescues: RescueRow[] = tripRows.map(({ trip, listing, restaurant, shelter, driver }) => {
@@ -147,5 +171,5 @@ export async function impactData(db: Db) {
     availableUsd: p.availableCents / 100,
   }));
 
-  return { rescues, money, funds };
+  return { rescues, money, funds, places: [...places.values()], routes: [...routes.values()] };
 }

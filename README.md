@@ -10,23 +10,26 @@ volunteer who drives it there before they get home. Built for the PayPal AI Hack
 
 ## Try it in two minutes (for judges)
 
-No sign-up. The menu has a page for each side of the app (Restaurants, Drivers, Shelters, Sponsors),
-and the **Viewing as** control on each page picks which restaurant, driver, shelter or sponsor you are.
+No sign-up. Every restaurant, driver, shelter and sponsor has their own private page; press **Try
+the demo** and pick who to be (one click, no password). Each step of a rescue offers a **Continue as…**
+button that switches you to the next person, so one rescue flows end to end.
 
-1. **Restaurants:** tap an example note (or type one, e.g. "about 30 portions of veg biryani, kept
+1. **Restaurant** (sign in as Lakeside Catering Co.): tap an example note (or type one, e.g. "about 30 portions of veg biryani, kept
    hot, ready till 10pm") and press **Post surplus**. Gemini reads it, the food-safety rules check
    it, a shelter is matched, the trip's money is reserved and a driver is booked.
-2. **Drivers:** opens on the driver who got the job. Press **Demo: simulate the drive**, add a photo
+2. **Driver:** press **Continue as** the driver who was booked. Press **Demo: simulate the drive**, add a photo
    of the food, press **I've picked it up**. On the drop-off leg, simulate the drive again, add a
    different photo of the same kind of food and press **Delivered**. Gemini checks the drop-off
    photo; one that shows no food, or clearly different food, is held for a coordinator.
-3. **Shelters:** watch the car on the live map, then press **Received**. Photo, GPS and the
+3. **Shelter:** press **Continue as** the shelter, watch the car on the live map, then press
+   **Received**. Photo, GPS and the
    shelter's tap agree, so PayPal Payouts reimburses the driver. Shelters can also pause deliveries
    for the night or change how many portions they can take; the matcher respects both.
-4. **Sponsors:** see the fund, the rescues it paid for and its invoices. **Get a PayPal invoice**
+4. **Sponsor** (switch person from the menu at the top right): see the fund, the rescues it paid for and its invoices. **Get a PayPal invoice**
    tops the fund up; paying it funds waiting rescues automatically.
-5. **Impact:** the public dashboard (AG Studio). Press **Ask the Insights agent** and try a prompt.
-6. **Coordinator console** (top right): read-only without the passcode. With it you can approve held
+5. **Impact:** count-ups, a map of every delivered route, who paid for the drives, AG Studio charts
+   that cross-filter, and the Insights agent: pick a starter question or ask your own.
+6. **Coordinator console** (top strip): read-only without the passcode. With it you can approve held
    deliveries, invoice sponsors and reset the demo. Passcode for judges: _shared in the Devpost
    submission_.
 
@@ -63,7 +66,7 @@ pickups first and produces those records as a CSV ready to file.
 | Sponsors and city grants | Fund balance, rescues and meals funded, self-serve top-up through a PayPal invoice, invoice history with pay links. |
 | Coordinator console | Only exceptions: held deliveries, payout failures, unfunded trips. Live map, funds, sponsor invoices with an AI-drafted friendly reminder. Syncs with PayPal every two minutes. |
 | Donate | PayPal Checkout tied to a specific waiting rescue or an area fund. |
-| Impact (public) | AG Studio dashboard over the real ledger and trip records, with a custom Insights agent. |
+| Impact (public) | Totals, a map of delivery routes, AG Studio charts over the real ledger and trip records, and an Insights agent to ask about them. |
 
 ## AI tools used
 
@@ -84,10 +87,10 @@ something to a person, never approve it.
 - **Treasurer:** reserves each trip's money before dispatch and pays the driver with PayPal Payouts.
 - **Nudge agent:** drafts a warm, specific reminder for an unpaid sponsor invoice from the ledger
   ("your support has funded 31 trips and 1,040 meals"); the coordinator edits it and PayPal sends it.
-- **Insights agent (AG Studio Agent Framework):** a custom agent for the public dashboard. It answers
-  questions with Studio's query tools, reads live operations through its own `get_tonight` tool, and
-  briefs AG Studio's built-in Lead agent to build or change charts. It runs through our own LLM
-  adapter, so the Gemini key stays on the server and calls are paced to the free tier's limits.
+- **Insights agent:** answers questions on the impact page from the same public-safe ledger and trip
+  numbers the page shows, plus what's on the road tonight. It runs on the server
+  (`/api/insights/ask`), so the Gemini key never reaches the browser, and it is paced to the free
+  tier's limits with a plain-numbers fallback when Gemini is busy.
 
 ## Run it locally
 

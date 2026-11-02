@@ -13,7 +13,33 @@ export function Kicker({ children }: { children: ReactNode }) {
   return <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-brand">{children}</p>;
 }
 
-export function PageHeader({ kicker, title, description, children }: { kicker?: string; title: ReactNode; description?: ReactNode; children?: ReactNode }) {
+export function PageHeader({
+  kicker,
+  title,
+  description,
+  art,
+  children,
+}: {
+  kicker?: string;
+  title: ReactNode;
+  description?: ReactNode;
+  /** Illustration standing on the header's bottom rule (see components/page-art.tsx). */
+  art?: ReactNode;
+  children?: ReactNode;
+}) {
+  if (art) {
+    return (
+      <header className="grid items-end gap-x-10 border-b border-line pt-8 sm:pt-10 md:grid-cols-[1.15fr_1fr]">
+        <div className="max-w-2xl pb-8 md:pb-12">
+          {kicker && <Kicker>{kicker}</Kicker>}
+          <h1 className="font-display text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">{title}</h1>
+          {description && <p className="mt-4 text-lg leading-relaxed text-muted">{description}</p>}
+          {children && <div className="mt-6">{children}</div>}
+        </div>
+        {art}
+      </header>
+    );
+  }
   return (
     <header className="flex flex-col gap-5 border-b border-line pb-8 pt-10 sm:pt-14 md:flex-row md:items-end md:justify-between">
       <div className="max-w-2xl">

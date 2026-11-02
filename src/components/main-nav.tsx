@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
@@ -8,7 +8,7 @@ import { buttonClass } from "./ui";
 
 type NavItem = { href: string; label: string };
 
-export function MainNav({ links }: { links: NavItem[] }) {
+export function MainNav({ links, account }: { links: NavItem[]; account: ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
@@ -23,23 +23,21 @@ export function MainNav({ links }: { links: NavItem[] }) {
 
   return (
     <>
-      <nav aria-label="Main" className="ml-auto hidden items-center gap-1 lg:flex">
+      <nav aria-label="Main" className="ml-auto hidden items-center gap-7 md:flex">
         {links.map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            aria-current={isActive(l.href) ? "page" : undefined}
-            className={`rounded-md px-3 py-2 text-sm transition-colors ${isActive(l.href) ? "font-semibold text-ink" : "text-muted hover:text-ink"}`}
-          >
+          <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} className="nav-link text-[15px] font-medium text-ink">
             {l.label}
           </Link>
         ))}
-        <Link href="/donate" className={`${buttonClass.donate} ml-3 min-h-10`}>
+      </nav>
+      <div className="hidden items-center gap-3 md:flex">
+        {account}
+        <Link href="/donate" className={`${buttonClass.donate} min-h-10`}>
           Donate
         </Link>
-      </nav>
+      </div>
 
-      <div className="ml-auto flex items-center gap-2 lg:hidden">
+      <div className="ml-auto flex items-center gap-2 md:hidden">
         <Link href="/donate" className={`${buttonClass.donate} min-h-10`}>
           Donate
         </Link>
@@ -56,9 +54,10 @@ export function MainNav({ links }: { links: NavItem[] }) {
       </div>
 
       {open && (
-        <nav id="mobile-menu" aria-label="Main" className="absolute inset-x-0 top-16 border-b border-line bg-bg shadow-lg lg:hidden">
+        <nav id="mobile-menu" aria-label="Main" className="absolute inset-x-0 top-16 border-b border-line bg-bg shadow-lg md:hidden">
+          <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6">{account}</div>
           <ul className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
-            {[...links, { href: "/coordinator", label: "Coordinator console" }].map((l) => (
+            {[...links, { href: "/demo", label: "Try the demo · sign in" }, { href: "/coordinator", label: "Coordinator console" }].map((l) => (
               <li key={l.href}>
                 <Link
                   href={l.href}

@@ -14,7 +14,7 @@ sure the volunteer who drives it isn't out of pocket."
 
 ## 0:15–0:40 · A restaurant posts food
 
-**Show:** Restaurant screen (phone width). Take a photo of real food, or type "about 30 portions
+**Show:** Try the demo, sign in as Lakeside Catering Co. Restaurant screen (phone width). Take a photo of real food, or type "about 30 portions
 of veg biryani, kept hot, ready till 10pm". Press Post surplus. Pause on the result card.
 
 **Say:** "Lakeside Catering snaps a photo. Gemini reads the dishes, portions and allergens. Plain-code
@@ -24,9 +24,9 @@ compliance plan, a PayPal subscription."
 
 ## 0:40–1:10 · The driver and the live map
 
-**Show:** Driver screen: the job, "$4 reserved for you". Press Demo: simulate the drive. Switch to
-the Shelter screen: the car moving on the map with an ETA. Back to Driver: photo, I've picked it up, then
-Delivered at the shelter.
+**Show:** Press Continue as Maya R. Driver screen: the job, "$4 reserved for you". Press Demo: simulate
+the drive, add a photo, I've picked it up, then Delivered at the shelter. Press Continue as the shelter:
+the car on the live map with an ETA.
 
 **Say:** "Maya, a volunteer, gets the job with the reimbursement already reserved. The shelter
 watches the food arrive live. Confidential shelters are never shown exactly on a public map."
@@ -52,12 +52,13 @@ writes reminders from real impact: thirty-one trips, a thousand meals."
 
 ## 2:00–2:35 · Impact, with AG Studio
 
-**Show:** Impact page. Click a bar to cross-filter. Press Ask the Insights agent and choose "Chart
-meals per driver"; show the new chart appearing.
+**Show:** Impact page. Numbers count up; scroll to the map as the routes draw in. Click Oakland in the
+AG Studio filter to cross-filter the charts. Ask the Insights agent "Which area relies most on
+donors?"
 
-**Say:** "Every meal, mile and dollar is public, in a dashboard built with AG Studio. Our custom
-Insights agent answers questions from the live ledger, and when you ask for a chart it briefs AG
-Studio's own agents to build it."
+**Say:** "Every meal, mile and dollar is public. Routes on the map are real deliveries, the charts are
+built with AG Studio, and our Insights agent answers from the live ledger without inventing a
+figure."
 
 ## 2:35–2:50 · Close
 

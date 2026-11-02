@@ -6,21 +6,17 @@ import { ArrowRight, Building2, Car, HandHeart, Store } from "lucide-react";
 import { getDb } from "@/db";
 import { listings, matches, trips } from "@/db/schema";
 import { daysAgo } from "@/lib/clock";
-import { buttonClass, Container, Kicker, Money } from "@/components/ui";
-
-const STEPS = [
-  { title: "Snap", body: "A restaurant photographs tonight's leftovers. Gemini reads the dishes, portions and allergens; plain-code rules check food safety." },
-  { title: "Match", body: "The shelter that can use it tonight is chosen by diet rules, capacity, distance and opening hours." },
-  { title: "Fund, then drive", body: "The driver's fuel money is reserved before anyone is dispatched. No volunteer ever drives unpaid." },
-  { title: "Verify and pay", body: "Photo, GPS and the shelter's tap must agree. Then PayPal Payouts reimburses the driver, to PayPal or Venmo." },
-];
+import { CountUp, Reveal } from "@/components/motion";
+import { RescueCycle } from "@/components/rescue-cycle";
+import { ShapeArt } from "@/components/shape-art";
+import { buttonClass, Container, Kicker } from "@/components/ui";
 
 const ROLES = [
-  { href: "/restaurant", icon: Store, title: "Restaurants", body: "Post surplus in one photo. Posting is always free, and SB 1383 records are kept for you.", cta: "Post surplus food" },
-  { href: "/driver", icon: Car, title: "Volunteer drivers", body: "One clear job at a time, the reimbursement shown up front, and paid before you're home.", cta: "Open the driver app" },
-  { href: "/shelter", icon: HandHeart, title: "Shelters and NGOs", body: "See food arriving live, tell us how much you can take tonight, confirm with one tap.", cta: "Open the shelter app" },
-  { href: "/sponsor", icon: Building2, title: "Sponsors and city grants", body: "Fund rescues in your area, pay invoices through PayPal and see exactly what your money did.", cta: "Open the sponsor portal" },
-];
+  { href: "/restaurant", art: { src: "/cutouts/chef.webp", alt: "A chef holding out a stack of sealed meal containers", kind: "cutout", tones: ["saffron", "coral", "mint"] }, icon: Store, title: "Restaurants", body: "Post surplus in one photo. Posting is always free, and SB 1383 records are kept for you.", cta: "Post surplus food" },
+  { href: "/driver", art: { src: "/cutouts/rider.webp", alt: "A volunteer rider with a delivery box on his bicycle", kind: "cutout", tones: ["mint", "saffron", "coral"] }, icon: Car, title: "Volunteer drivers", body: "One clear job at a time, the reimbursement shown up front, and paid before you're home.", cta: "Open the driver app" },
+  { href: "/shelter", art: { src: "/cutouts/handoff.webp", alt: "A meal box being handed from one person to another", kind: "photo", tones: ["sky", "coral", "saffron"] }, icon: HandHeart, title: "Shelters and NGOs", body: "See food arriving live, tell us how much you can take tonight, confirm with one tap.", cta: "Open the shelter app" },
+  { href: "/sponsor", art: { src: "/cutouts/sponsor.webp", alt: "A smiling man carrying a crate of bread, oranges and greens", kind: "cutout", tones: ["sky", "saffron", "mint"] }, icon: Building2, title: "Sponsors and city grants", body: "Fund rescues in your area, pay invoices through PayPal and see exactly what your money did.", cta: "Open the sponsor portal" },
+] as const;
 
 const FUNDING = [
   ["The restaurant's compliance plan", "PayPal Subscriptions, $25 a month"],
@@ -40,31 +36,37 @@ export default function Home() {
   return (
     <>
       <Container>
-        <section className="grid gap-12 pb-16 pt-16 sm:pt-24 lg:grid-cols-[1.35fr_1fr] lg:items-end">
-          <div>
+        <section className="grid items-end gap-x-12 gap-y-10 border-b border-line pt-12 sm:pt-16 lg:grid-cols-[1.1fr_1fr]">
+          <div className="space-y-7 lg:pb-16">
             <Kicker>Food rescue · San Francisco Bay Area</Kicker>
-            <h1 className="font-display text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-7xl">
+            <h1 className="font-display text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
               Good food shouldn&apos;t end the night in the bin.
             </h1>
-          </div>
-          <div className="space-y-7 lg:pb-2">
-            <p className="text-lg leading-relaxed text-muted">
+            <p className="max-w-xl text-lg leading-relaxed text-muted">
               MealBridge moves tonight&apos;s restaurant surplus to tonight&apos;s shelter meals. AI agents find the shelter, book a volunteer driver and check the
               delivery. PayPal reimburses the driver before they get home.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/restaurant" className={`${buttonClass.primary} px-5`}>
-                Run a rescue <ArrowRight className="h-4 w-4" aria-hidden />
+              <Link href="/demo" className={`${buttonClass.primary} px-5`}>
+                Try the demo <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link href="/impact" className={`${buttonClass.secondary} px-5`}>
                 See the impact
               </Link>
             </div>
           </div>
+          <ShapeArt
+            src="/cutouts/volunteers.webp"
+            alt="Three volunteers in aprons laughing together, each carrying a box of food"
+            tones={["mint", "coral", "saffron"]}
+            priority
+            sizes="(min-width: 1024px) 520px, 100vw"
+            className="h-72 sm:h-[26rem] lg:h-[32rem]"
+          />
         </section>
       </Container>
 
-      <section className="border-y border-line" aria-label="Last 30 days">
+      <section className="border-b border-line" aria-label="Last 30 days">
         <Container>
           <Suspense fallback={<StatsBand />}>
             <LiveStats />
@@ -74,21 +76,18 @@ export default function Home() {
 
       <Container>
         <section className="py-20 sm:py-28" aria-labelledby="how">
-          <div className="max-w-2xl">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <Kicker>How it works</Kicker>
             <h2 id="how" className="font-display text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
               From the kitchen to the shelter in under an hour.
             </h2>
+            <p className="mt-4 text-lg leading-relaxed text-muted">
+              Six steps, every night. People do the cooking, driving and serving; agents and PayPal handle everything in between.
+            </p>
+          </Reveal>
+          <div className="mt-12 sm:mt-8">
+            <RescueCycle />
           </div>
-          <ol className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((s, i) => (
-              <li key={s.title} className="border-t border-ink pt-5">
-                <p className="font-display text-sm font-semibold tabular-nums text-muted">0{i + 1}</p>
-                <h3 className="mt-3 font-display text-xl font-semibold tracking-[-0.02em]">{s.title}</h3>
-                <p className="mt-2 leading-relaxed text-muted">{s.body}</p>
-              </li>
-            ))}
-          </ol>
         </section>
 
         <section className="pb-20 sm:pb-28" aria-labelledby="who">
@@ -98,18 +97,27 @@ export default function Home() {
               One simple screen for everyone in the chain.
             </h2>
           </div>
-          <ul className="mt-12 grid border-t border-line sm:grid-cols-2">
-            {ROLES.map(({ href, icon: Icon, title, body, cta }) => (
-              <li key={href} className="border-b border-line sm:odd:border-r sm:odd:pr-10 sm:even:pl-10">
-                <Link href={href} className="group flex h-full flex-col gap-3 py-8">
-                  <Icon className="h-6 w-6 text-brand" strokeWidth={1.75} aria-hidden />
-                  <h3 className="font-display text-xl font-semibold tracking-[-0.02em]">{title}</h3>
-                  <p className="max-w-md leading-relaxed text-muted">{body}</p>
-                  <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-semibold">
+          <ul className="mt-12 grid gap-x-8 gap-y-12 sm:grid-cols-2">
+            {ROLES.map(({ href, art, icon: Icon, title, body, cta }, i) => (
+              <Reveal as="li" key={href} delayMs={(i % 2) * 120}>
+                <Link href={href} className="group block">
+                  <div className="overflow-hidden rounded-2xl bg-surface px-6 pt-8">
+                    <ShapeArt
+                      {...art}
+                      sizes="(min-width: 640px) 45vw, 90vw"
+                      className="aspect-[3/2] transition-transform duration-700 ease-out group-hover:-translate-y-1"
+                    />
+                  </div>
+                  <div className="mt-5 flex items-center gap-2.5">
+                    <Icon className="h-5 w-5 text-brand" strokeWidth={1.75} aria-hidden />
+                    <h3 className="font-display text-xl font-semibold tracking-[-0.02em]">{title}</h3>
+                  </div>
+                  <p className="mt-2 max-w-md leading-relaxed text-muted">{body}</p>
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold">
                     {cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
                   </span>
                 </Link>
-              </li>
+              </Reveal>
             ))}
           </ul>
         </section>
@@ -151,24 +159,34 @@ export default function Home() {
             </h2>
           </div>
           <dl className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
-            {PRINCIPLES.map(([title, body]) => (
-              <div key={title}>
-                <dt className="font-display text-lg font-semibold tracking-[-0.01em]">{title}</dt>
+            {PRINCIPLES.map(([title, body], i) => (
+              <Reveal key={title} delayMs={(i % 2) * 120}>
+                <dt className="border-t border-ink pt-5 font-display text-lg font-semibold tracking-[-0.01em]">{title}</dt>
                 <dd className="mt-2 leading-relaxed text-muted">{body}</dd>
-              </div>
+              </Reveal>
             ))}
           </dl>
         </section>
 
-        <section className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-surface p-8 sm:flex-row sm:items-center sm:p-12">
-          <div className="max-w-xl">
-            <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">$5 covers a rescue trip&apos;s fuel.</h2>
-            <p className="mt-2 text-muted">Fund a waiting pickup tonight and watch it happen on the impact dashboard.</p>
+        <Reveal as="section" className="grid overflow-hidden rounded-2xl bg-surface md:grid-cols-2">
+          <div className="flex flex-col justify-center gap-6 p-8 sm:p-12">
+            <div>
+              <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">$5 covers a rescue trip&apos;s fuel.</h2>
+              <p className="mt-2 text-muted">Fund a waiting pickup tonight and watch it happen on the impact dashboard.</p>
+            </div>
+            <Link href="/donate" className={`${buttonClass.donate} w-fit px-6`}>
+              Donate
+            </Link>
           </div>
-          <Link href="/donate" className={`${buttonClass.donate} px-6`}>
-            Donate
-          </Link>
-        </section>
+          <ShapeArt
+            src="/cutouts/mealbox.webp"
+            alt="An open takeaway box of rice, curry and broccoli"
+            kind="photo"
+            tones={["coral", "mint", "saffron"]}
+            sizes="(min-width: 768px) 380px, 80vw"
+            className="h-72 md:h-auto md:min-h-80"
+          />
+        </Reveal>
       </Container>
     </>
   );
@@ -176,10 +194,10 @@ export default function Home() {
 
 function StatsBand({ meals, rescues, paidCents, live }: { meals?: number; rescues?: number; paidCents?: number; live?: number }) {
   const cells: [React.ReactNode, string][] = [
-    [meals?.toLocaleString("en-US") ?? "–", "meals rescued in the last 30 days"],
-    [rescues ?? "–", "deliveries verified"],
-    [paidCents != null ? <Money key="m" cents={paidCents} /> : "–", "reimbursed to volunteer drivers"],
-    [live ?? "–", "rescues on the road right now"],
+    [meals != null ? <CountUp key="meals" value={meals} /> : "–", "meals rescued in the last 30 days"],
+    [rescues != null ? <CountUp key="rescues" value={rescues} /> : "–", "deliveries verified"],
+    [paidCents != null ? <CountUp key="paid" value={paidCents} as="cents" /> : "–", "reimbursed to volunteer drivers"],
+    [live != null ? <CountUp key="live" value={live} /> : "–", "rescues on the road right now"],
   ];
   return (
     <dl className="grid grid-cols-2 lg:grid-cols-4">

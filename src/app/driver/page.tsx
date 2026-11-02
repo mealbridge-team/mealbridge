@@ -5,9 +5,12 @@ import { getDb } from "@/db";
 import { driverSetAvailable } from "@/app/actions";
 import { allDrivers, tripViews, type TripView } from "@/lib/queries";
 import { AutoRefresh } from "@/components/auto-refresh";
-import { Picker } from "@/components/picker";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, Container, dateLabel, Empty, Money, Notice, PageHeader, Panel, readable, RescueSteps, Skeleton, smallButton, timeLabel } from "@/components/ui";
+import { DemoHandoff } from "@/components/demo-handoff";
+import { PageArt } from "@/components/page-art";
+import { personaId } from "@/lib/demo-session";
+import { PortalSignIn } from "@/app/demo/people";
 import { JobLeg } from "./job-leg";
 
 export const metadata = { title: "For drivers" };
@@ -18,7 +21,7 @@ export default function DriverPage({ searchParams }: PageProps<"/driver">) {
       <Suspense
         fallback={
           <>
-            <PageHeader kicker="For volunteer drivers" title="Tonight's run" />
+            <PageHeader art={<PageArt page="driver" />} kicker="For volunteer drivers" title="Tonight's run" />
             <div className="py-8">
               <Skeleton lines={6} />
             </div>
@@ -42,9 +45,10 @@ async function DriverView({ searchParams }: { searchParams: PageProps<"/driver">
   if (drivers.length === 0) return <Empty>No drivers yet. Run npm run setup to load the demo.</Empty>;
 
   const { d } = await searchParams;
-  // Without a choice, open on whoever has the newest active job, so the demo flows from the restaurant.
-  const [newest] = await tripViews(db, { statuses: [...ACTIVE], limit: 1 });
-  const driver = drivers.find((x) => x.id === d) ?? drivers.find((x) => x.id === newest?.trip.driverId) ?? drivers[0];
+  const signedIn = typeof d === "string" ? d : await personaId("driver");
+  const driver = drivers.find((x) => x.id === signedIn);
+  if (!driver)
+    return <PortalSignIn role="driver" header={<PageHeader art={<PageArt page="driver" />} kicker="For volunteer drivers" title="Sign in to drive" description="Choose a volunteer driver to see their job for tonight." />} />;
   const trips = await tripViews(db, { driverId: driver.id, limit: 200 });
   const active = trips.find((t) => (ACTIVE as readonly string[]).includes(t.trip.status));
   const paid = trips.filter((t) => t.trip.status === "paid");
@@ -53,9 +57,7 @@ async function DriverView({ searchParams }: { searchParams: PageProps<"/driver">
 
   return (
     <>
-      <PageHeader kicker="For volunteer drivers" title="Tonight's run" description="One job at a time. Your fuel money is reserved before you set off and paid when the shelter confirms.">
-        <Picker items={drivers} selectedId={driver.id} param="d" path="/driver" />
-      </PageHeader>
+      <PageHeader art={<PageArt page="driver" />} kicker="For volunteer drivers" title="Tonight's run" description="One job at a time. Your fuel money is reserved before you set off and paid when the shelter confirms." />
 
       <div className="grid items-start gap-6 py-8 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
@@ -202,6 +204,9 @@ function ActiveJob({ view, driver }: { view: TripView; driver: { id: string; lat
           />
         )}
         {trip.status === "delivered" && <Notice tone="ok" title="Delivered. Thank you.">As soon as the shelter confirms, PayPal sends your reimbursement.</Notice>}
+        {(trip.status === "picked_up" || trip.status === "delivered") && (
+          <DemoHandoff role="shelter" id={shelter.id} name={shelter.name} what="the shelter confirms it arrived, which releases your PayPal payout." />
+        )}
         {trip.status === "needs_review" && (
           <Notice tone="warn" title="A coordinator is checking this delivery before paying.">
             {trip.verification?.notes.filter((n) => !n.startsWith("Demo mode")).join(" ")}

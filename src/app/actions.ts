@@ -20,13 +20,14 @@ import {
 import { createListing } from "@/services/listings";
 import { cancelTrip, matchListing, reassignTrip, type MatchOutcome } from "@/services/pipeline";
 import { requireCoordinator, unlockCoordinator } from "@/lib/access";
+import { clearPersona, PORTAL, setPersona, type Role } from "@/lib/demo-session";
 import { requestOrigin } from "@/lib/origin";
 import { PayPalError } from "@/paypal/client";
 import { draftReminder, invoiceSponsor, InvoiceError, sendReminder, simulateInvoicePayment } from "@/services/invoices";
 import { syncWithPayPal } from "@/services/paypal-sync";
 import { endSubscription, startSubscription, SubscriptionError } from "@/services/subscriptions";
 
-// Prototype note: there is no sign-in yet. Each screen picks who you are from a list, so these
+// Prototype note: sign-in is a demo persona (lib/demo-session.ts), not a real account, so these
 // actions trust the ids they're given. Real accounts are out of scope for the hackathon.
 
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
@@ -269,4 +270,16 @@ export async function coordinatorReminder(invoiceId: string, _prev: ReminderStat
     console.error("reminder failed", err);
     return { stage: "error", message: "PayPal didn't accept the reminder." };
   }
+}
+
+// Demo sign-in: become one restaurant, driver, shelter or sponsor and open their portal.
+export async function signInAs(role: Role, id: string) {
+  if (!(role in PORTAL) || !id) redirect("/demo");
+  await setPersona({ role, id });
+  redirect(PORTAL[role]);
+}
+
+export async function signOut() {
+  await clearPersona();
+  redirect("/demo");
 }

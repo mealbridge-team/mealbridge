@@ -5,10 +5,15 @@ import { getDb } from "@/db";
 import { shelterConfirm, shelterNeedFilled, shelterSetAccepting, shelterSetCapacity } from "@/app/actions";
 import { allShelters, shelterNeeds, tripViews } from "@/lib/queries";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { CountUp } from "@/components/motion";
 import { LiveMap } from "@/components/live-map";
-import { Picker } from "@/components/picker";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, Container, Empty, inputClass, PageHeader, Panel, readable, Skeleton, smallButton, TripStatusBadge, timeLabel } from "@/components/ui";
+import { DemoHandoff } from "@/components/demo-handoff";
+import { PageArt } from "@/components/page-art";
+import { withinMinutes } from "@/lib/clock";
+import { personaId } from "@/lib/demo-session";
+import { PortalSignIn } from "@/app/demo/people";
 
 export const metadata = { title: "For shelters" };
 
@@ -18,7 +23,7 @@ export default function ShelterPage({ searchParams }: PageProps<"/shelter">) {
       <Suspense
         fallback={
           <>
-            <PageHeader kicker="For shelters and NGOs" title="Food coming tonight" />
+            <PageHeader art={<PageArt page="shelter" />} kicker="For shelters and NGOs" title="Food coming tonight" />
             <div className="py-8">
               <Skeleton lines={6} />
             </div>
@@ -41,31 +46,50 @@ async function ShelterView({ searchParams }: { searchParams: PageProps<"/shelter
   if (shelters.length === 0) return <Empty>No shelters yet. Run npm run setup to load the demo.</Empty>;
 
   const { s } = await searchParams;
-  // Without a choice, open on the shelter with the newest food on its way.
-  const [newest] = await tripViews(db, { statuses: ["funded", "assigned", "picked_up", "delivered"], limit: 1 });
-  const shelter = shelters.find((x) => x.id === s) ?? shelters.find((x) => x.id === newest?.shelter.id) ?? shelters[0];
+  const signedIn = typeof s === "string" ? s : await personaId("shelter");
+  const shelter = shelters.find((x) => x.id === signedIn);
+  if (!shelter)
+    return (
+      <PortalSignIn
+        role="shelter"
+        header={
+          <PageHeader
+            art={<PageArt page="shelter" />}
+            kicker="For shelters and NGOs"
+            title="Sign in to your shelter"
+            description="Choose a shelter to see the food coming tonight."
+          />
+        }
+      />
+    );
   const [trips, needs] = await Promise.all([tripViews(db, { shelterId: shelter.id, limit: 60 }), shelterNeeds(db, shelter.id)]);
   const incoming = trips.filter((t) => INCOMING.includes(t.trip.status));
   const past = trips.filter((t) => !INCOMING.includes(t.trip.status)).slice(0, 6);
   const portionsComing = incoming.reduce((sum, t) => sum + t.listing.totalPortions, 0);
+  // The delivery this shelter confirmed in the last half hour, for the demo's hand-off back to the driver.
+  const justConfirmed = past.find((t) => t.trip.shelterConfirmedAt && withinMinutes(t.trip.shelterConfirmedAt, 30));
   const onRoad = incoming.filter((t) => t.trip.status === "assigned" || t.trip.status === "picked_up");
 
   return (
     <>
       <PageHeader
+        art={<PageArt page="shelter" />}
         kicker="For shelters and NGOs"
         title="Food coming tonight"
         description="Watch it arrive, then tap once when it's in your kitchen. That tap releases the driver's reimbursement."
-      >
-        <Picker items={shelters} selectedId={shelter.id} param="s" path="/shelter" />
-      </PageHeader>
+      />
 
       <div className="space-y-6 py-8">
         <section aria-label="Tonight's settings" className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
           <div className="bg-bg p-5">
             <p className="text-sm text-muted">On the way</p>
-            <p className="mt-1 font-display text-3xl font-semibold tabular-nums">{portionsComing}</p>
-            <p className="text-sm text-muted">portions in {incoming.length} rescue{incoming.length === 1 ? "" : "s"}</p>
+            <p className="mt-1 font-display text-3xl font-semibold">
+              <CountUp value={portionsComing} />
+            </p>
+            <p className="text-sm text-muted">
+              portions in {incoming.length} rescue
+              {incoming.length === 1 ? "" : "s"}
+            </p>
           </div>
           <div className="bg-bg p-5">
             <div className="flex items-center justify-between gap-3">
@@ -88,7 +112,15 @@ async function ShelterView({ searchParams }: { searchParams: PageProps<"/shelter
             </label>
             <div className="mt-2 flex gap-2">
               <div className="relative flex-1">
-                <input id="capacity" name="capacity" type="number" min={5} max={2000} defaultValue={shelter.capacityPortions} className={`${inputClass} pr-20`} />
+                <input
+                  id="capacity"
+                  name="capacity"
+                  type="number"
+                  min={5}
+                  max={2000}
+                  defaultValue={shelter.capacityPortions}
+                  className={`${inputClass} pr-20`}
+                />
                 <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-muted">portions</span>
               </div>
               <SubmitButton variant="secondary" pendingText="…">
@@ -102,7 +134,11 @@ async function ShelterView({ searchParams }: { searchParams: PageProps<"/shelter
         <div className="grid items-start gap-6 lg:grid-cols-[1.3fr_1fr]">
           <Panel title="Arriving" description={incoming.length ? "Confirm each one when it's in your kitchen." : undefined}>
             {incoming.length === 0 ? (
-              <Empty>{shelter.acceptingFood ? "Nothing on the way yet. When a restaurant nearby posts food that suits you, it shows here." : "Deliveries are paused for tonight."}</Empty>
+              <Empty>
+                {shelter.acceptingFood
+                  ? "Nothing on the way yet. When a restaurant nearby posts food that suits you, it shows here."
+                  : "Deliveries are paused for tonight."}
+              </Empty>
             ) : (
               <ul className="space-y-3">
                 {incoming.map((t) => {
@@ -175,16 +211,26 @@ async function ShelterView({ searchParams }: { searchParams: PageProps<"/shelter
               {past.length === 0 ? (
                 <Empty>No deliveries yet.</Empty>
               ) : (
-                <ul className="divide-y divide-line text-sm">
-                  {past.map((t) => (
-                    <li key={t.trip.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <span>
-                        {t.listing.totalPortions} portions from {t.restaurant.name}
-                      </span>
-                      <TripStatusBadge status={t.trip.status} />
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-4">
+                  {justConfirmed?.driver && (
+                    <DemoHandoff
+                      role="driver"
+                      id={justConfirmed.driver.id}
+                      name={justConfirmed.driver.name}
+                      what="see the driver's PayPal reimbursement arrive."
+                    />
+                  )}
+                  <ul className="divide-y divide-line text-sm">
+                    {past.map((t) => (
+                      <li key={t.trip.id} className="flex items-center justify-between gap-3 py-2.5">
+                        <span>
+                          {t.listing.totalPortions} portions from {t.restaurant.name}
+                        </span>
+                        <TripStatusBadge status={t.trip.status} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </Panel>
           </div>

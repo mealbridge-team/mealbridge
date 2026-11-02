@@ -1,21 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
-import {
-  AgStudioAiModule,
-  createAiHarness,
-  directLlmRunner,
-  studioTheme,
-  type AgAiTool,
-  type AgDataSourcesDefinition,
-  type AgReportState,
-  type AgStudioMode,
-} from "ag-studio";
+import { studioTheme, type AgDataSourcesDefinition, type AgReportState } from "ag-studio";
 import type { FundRow, MoneyRow, RescueRow } from "@/lib/impact-data";
-import { Sparkles } from "lucide-react";
-import { buttonClass } from "@/components/ui";
-import { geminiAdapter } from "./gemini-adapter";
 
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const WHOLE = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -85,110 +73,62 @@ const title = (text: string, subtitle?: string) => ({
   ...(subtitle ? { subtitle: { enabled: true, text: subtitle } } : {}),
 });
 
-const INITIAL_STATE = {
-  selectedPageId: "impact",
-  pages: [
-    {
-      id: "impact",
-      widgets: {
-        areaFilter: {
-          type: "button-filter",
-          dataMapping: { value: [{ id: "rescues.area" }] },
-          format: { title: { enabled: false }, subtitle: { enabled: false }, style: { selection: { type: "multiple" } } },
-        },
-        meals: { type: "value", dataMapping: { value: [{ id: "rescues.meals", aggregation: "sum" }] }, format: title("Meals delivered") },
-        pounds: { type: "value", dataMapping: { value: [{ id: "rescues.pounds", aggregation: "sum" }] }, format: title("Pounds of food saved") },
-        paid: { type: "value", dataMapping: { value: [{ id: "rescues.reimbursementUsd", aggregation: "sum" }] }, format: title("Reimbursed to drivers") },
-        speed: { type: "value", dataMapping: { value: [{ id: "rescues.minutesToDeliver", aggregation: "avg" }] }, format: title("Minutes, post to plate") },
-        weekly: {
-          type: "column-chart-stacked",
-          dataMapping: { categoryKey: [{ id: "rescues.week" }], valueKey: [{ id: "rescues.meals", aggregation: "sum" }], legendKey: [{ id: "rescues.area" }] },
-          format: title("Meals delivered each week", "By the area the food came from"),
-        },
-        funders: {
-          type: "donut-chart",
-          dataMapping: { categoryKey: [{ id: "rescues.fundedBy" }], valueKey: [{ id: "rescues.reimbursementUsd", aggregation: "sum" }] },
-          format: title("Who paid for the drives", "Restaurants never pay per pickup"),
-        },
-        restaurants: {
-          type: "bar-chart-grouped",
-          dataMapping: { categoryKey: [{ id: "rescues.restaurant" }], valueKey: [{ id: "rescues.meals", aggregation: "sum" }] },
-          format: title("Meals by restaurant"),
-        },
-        weekdays: {
-          type: "column-chart-grouped",
-          dataMapping: { categoryKey: [{ id: "rescues.weekday" }], valueKey: [{ id: "rescues.meals", aggregation: "sum" }] },
-          format: title("Busiest nights"),
-        },
-        outcomes: {
-          type: "grid",
-          dataMapping: {
-            cols: [
-              { id: "rescues.outcome" },
-              { id: "rescues.meals", aggregation: "sum" },
-              { id: "rescues.reimbursementUsd", aggregation: "sum" },
-            ],
-          },
-          format: title("Outcomes", "Food the safety rules turned away is counted too"),
-        },
-      },
-      widgetLayout: {
-        areaFilter: { xTrack: 0, yTrack: 0, xSpan: 24, ySpan: 6 },
-        meals: { xTrack: 0, yTrack: 6, xSpan: 6, ySpan: 7 },
-        pounds: { xTrack: 6, yTrack: 6, xSpan: 6, ySpan: 7 },
-        paid: { xTrack: 12, yTrack: 6, xSpan: 6, ySpan: 7 },
-        speed: { xTrack: 18, yTrack: 6, xSpan: 6, ySpan: 7 },
-        weekly: { xTrack: 0, yTrack: 13, xSpan: 15, ySpan: 20 },
-        funders: { xTrack: 15, yTrack: 13, xSpan: 9, ySpan: 20 },
-        restaurants: { xTrack: 0, yTrack: 33, xSpan: 9, ySpan: 18 },
-        weekdays: { xTrack: 9, yTrack: 33, xSpan: 8, ySpan: 18 },
-        outcomes: { xTrack: 17, yTrack: 33, xSpan: 7, ySpan: 18 },
-      },
-    },
-    {
-      id: "money",
-      widgets: {
-        moneyIn: {
-          type: "column-chart-stacked",
-          dataMapping: { categoryKey: [{ id: "money.week" }], valueKey: [{ id: "money.amountUsd", aggregation: "sum" }], legendKey: [{ id: "money.flow" }] },
-          format: title("Money in and out each week", "Every dollar in is spent on a verified delivery"),
-        },
-        fundsNow: {
-          type: "grid",
-          dataMapping: { cols: [{ id: "funds.fund" }, { id: "funds.kind" }, { id: "funds.availableUsd", aggregation: "sum" }] },
-          format: title("Funds right now"),
-        },
-        flows: {
-          type: "pie-chart",
-          dataMapping: { categoryKey: [{ id: "money.flow" }], valueKey: [{ id: "money.amountUsd", aggregation: "sum" }] },
-          format: title("Where the money moves"),
-        },
-      },
-      widgetLayout: {
-        moneyIn: { xTrack: 0, yTrack: 0, xSpan: 16, ySpan: 22 },
-        flows: { xTrack: 16, yTrack: 0, xSpan: 8, ySpan: 22 },
-        fundsNow: { xTrack: 0, yTrack: 22, xSpan: 24, ySpan: 18 },
-      },
-    },
-  ],
-} as unknown as AgReportState;
+// Three charts and a filter, laid straight onto the page: no tabs, no editor, no inner scroll.
+const WIDGETS = {
+  areaFilter: {
+    type: "button-filter",
+    dataMapping: { value: [{ id: "rescues.area" }] },
+    format: { title: { enabled: false }, subtitle: { enabled: false }, style: { selection: { type: "multiple" } } },
+  },
+  weekly: {
+    type: "column-chart-stacked",
+    dataMapping: { categoryKey: [{ id: "rescues.week" }], valueKey: [{ id: "rescues.meals", aggregation: "sum" }], legendKey: [{ id: "rescues.area" }] },
+    format: title("Meals delivered each week", "By the area the food came from"),
+  },
+  moneyWeekly: {
+    type: "column-chart-stacked",
+    dataMapping: { categoryKey: [{ id: "money.week" }], valueKey: [{ id: "money.amountUsd", aggregation: "sum" }], legendKey: [{ id: "money.flow" }] },
+    format: title("Money in and out each week", "Every dollar in pays for a verified delivery"),
+  },
+  fundsNow: {
+    type: "grid",
+    dataMapping: { cols: [{ id: "funds.fund" }, { id: "funds.availableUsd", aggregation: "sum" }] },
+    format: title("Funds right now"),
+  },
+};
 
-// Matches the site: white surfaces, hairline borders, one brand green. The chart palette leads with
-// the green and stays distinguishable for colour-blind readers (blue, orange, then neutrals).
+const WIDE = {
+  areaFilter: { xTrack: 0, yTrack: 0, xSpan: 24, ySpan: 5 },
+  weekly: { xTrack: 0, yTrack: 5, xSpan: 24, ySpan: 20 },
+  moneyWeekly: { xTrack: 0, yTrack: 25, xSpan: 15, ySpan: 21 },
+  fundsNow: { xTrack: 15, yTrack: 25, xSpan: 9, ySpan: 21 },
+};
+const NARROW = {
+  areaFilter: { xTrack: 0, yTrack: 0, xSpan: 24, ySpan: 6 },
+  weekly: { xTrack: 0, yTrack: 6, xSpan: 24, ySpan: 21 },
+  moneyWeekly: { xTrack: 0, yTrack: 27, xSpan: 24, ySpan: 21 },
+  fundsNow: { xTrack: 0, yTrack: 48, xSpan: 24, ySpan: 18 },
+};
+
+const reportState = (narrow: boolean) =>
+  ({ selectedPageId: "impact", pages: [{ id: "impact", widgets: WIDGETS, widgetLayout: narrow ? NARROW : WIDE }] }) as unknown as AgReportState;
+
+// Matches the site: cream page, white cards with hairline borders, one brand green. The chart palette
+// leads with the green and stays distinguishable for colour-blind readers (blue, orange, then neutrals).
 const mealbridgeTheme = studioTheme.withParams({
   accentColor: "#0d5a3b",
-  backgroundColor: "#ffffff",
+  backgroundColor: "#fcfaf6",
   foregroundColor: "#111412",
   textColor: "#111412",
-  subtleTextColor: "#5b605c",
-  borderColor: "#e3e2dc",
+  subtleTextColor: "#595e58",
+  borderColor: "#e5dfd3",
   borderRadius: 8,
-  fontFamily: "var(--font-inter), system-ui, sans-serif",
-  studioCanvasBackgroundColor: "#f6f5f1",
+  fontFamily: "var(--font-body), system-ui, sans-serif",
+  studioCanvasBackgroundColor: "#fcfaf6",
   studioWidgetBackgroundColor: "#ffffff",
-  studioWidgetBorderRadius: 12,
-  studioWidgetTitleFontFamily: "var(--font-inter-tight), var(--font-inter), system-ui, sans-serif",
-  studioWidgetTitleFontSize: 15,
+  studioWidgetBorderRadius: 16,
+  studioWidgetTitleFontFamily: "var(--font-display-face), var(--font-body), system-ui, sans-serif",
+  studioWidgetTitleFontSize: 16,
   studioWidgetTitleFontWeight: 600,
   chartAccentColor: "#0d5a3b",
   chartPaletteFills1Color: "#0d5a3b",
@@ -199,95 +139,62 @@ const mealbridgeTheme = studioTheme.withParams({
   chartPaletteFills6Color: "#5b605c",
   chartPaletteFills7Color: "#e8c39a",
   chartPaletteFills8Color: "#b9bdb8",
-  chartFontFamily: "var(--font-inter), system-ui, sans-serif",
+  chartFontFamily: "var(--font-body), system-ui, sans-serif",
 });
 
-// A MealBridge tool the built-in agents don't have: what's happening on the road right now.
-const tonightTool: AgAiTool = {
-  name: "get_tonight",
-  description: "Live MealBridge operations right now: tonight's rescues and their status, drivers on the road with ETAs, and how much each fund can still spend.",
-  kind: "client",
-  schema: () => ({
-    name: "get_tonight",
-    description: "Live MealBridge operations right now: tonight's rescues, drivers on the road, and fund balances.",
-    parameters: { type: "object", properties: {} },
-  }),
-  async execute(_call, ctx) {
-    try {
-      const res = await fetch("/api/insights/tonight", { signal: ctx.signal });
-      return ctx.success(JSON.stringify(await res.json()));
-    } catch {
-      return ctx.error("Couldn't reach the live operations feed.");
-    }
-  },
-};
-
-const INSIGHTS_INSTRUCTIONS = `You are the MealBridge Insights agent, an analyst for a food-rescue nonprofit in the San Francisco Bay Area.
-Restaurants post surplus food; a Matcher picks a shelter; the trip's driver reimbursement is reserved before dispatch from (1) the restaurant's compliance plan, (2) area donors, (3) sponsors and city grants, (4) the general fund; drivers are reimbursed through PayPal Payouts once photo, GPS and the shelter's confirmation agree.
-Answer questions about impact, money and operations with numbers from the dashboard data (use view_schema and execute_query) or from get_tonight for what is happening right now.
-When the user wants a chart, table or page built or changed, delegate to the lead agent with a clear, specific brief (which fields, which aggregation, which chart type), then check the result with view_report before telling the user what changed. If the delegate failed or the widget isn't there, say so plainly.
-Be concise and warm. Lead with the answer and the number. Never invent figures; say when the data can't answer something. Shelter labels are deliberately approximate for privacy; never speculate about locations.`;
-
 export default function ImpactStudio({ rescues, money, funds }: { rescues: RescueRow[]; money: MoneyRow[]; funds: FundRow[] }) {
-  const [mode, setMode] = useState<AgStudioMode>("view");
   const data = useMemo(() => dataSources(rescues, money, funds), [rescues, money, funds]);
+  // Client-only component (see impact-client.tsx), so the window is there to pick a layout once.
+  const [initialState] = useState(() => reportState(window.innerWidth < 720));
+  const [fitRef, fitPx] = useFitHeight();
 
   return (
-    <AgStudioProvider modules={[AgStudioAiModule]} licenseKey={process.env.NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">
-          {mode === "view"
-            ? "Filter, cross-filter and drill in. Click any bar or slice to filter the rest."
-            : "Ask the Insights agent anything, or drag fields to build your own view. Changes stay in your browser."}
-        </p>
-        <button
-          type="button"
-          onClick={() => setMode(mode === "view" ? "edit" : "view")}
-          className={mode === "view" ? buttonClass.primary : buttonClass.secondary}
-        >
-          {mode === "view" ? (
-            <>
-              <Sparkles className="h-4 w-4" aria-hidden /> Ask the Insights agent
-            </>
-          ) : (
-            "Back to the dashboard"
-          )}
-        </button>
-      </div>
-      <div className="h-[860px] overflow-hidden rounded-2xl border border-line">
+    <AgStudioProvider licenseKey={process.env.NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY}>
+      <div ref={fitRef} className="impact-charts" style={{ height: fitPx }}>
         <AgStudio
+          style={{ height: "100%" }}
           data={data}
-          initialState={INITIAL_STATE}
-          mode={mode}
+          initialState={initialState}
+          mode="view"
           theme={mealbridgeTheme}
-          panels={{ edit: { left: ["data"], right: ["ai", "edit"] }, view: { left: [], right: [] } }}
-          ai={({ api }) =>
-            createAiHarness(api, ({ tools, builtIn }) => {
-              const adapter = geminiAdapter();
-              const insights = directLlmRunner({
-                id: "insights",
-                name: "Insights",
-                description: "MealBridge's analyst: impact, money and live operations. Builds charts by briefing Studio's agents.",
-                adapter,
-                instructions: () => INSIGHTS_INSTRUCTIONS,
-                tools: (ctx) => [ctx.studio.viewSchema(), ctx.studio.executeQuery(), ctx.studio.viewReport(), tonightTool, tools.delegateTo(["lead"])],
-                maxTurns: 14,
-              });
-              const studioAgents = (["lead", "data", "page", "planning", "widget"] as const).map((id) => directLlmRunner({ ...builtIn[id], adapter }));
-              return {
-                agents: [insights, ...studioAgents],
-                primary: "insights",
-                promptStarters: [
-                  { label: "What's happening tonight?", prompt: "What's happening on the road tonight, and is any rescue stuck waiting for money?" },
-                  { label: "Which area needs donors?", prompt: "Which area relies most on donors and the general fund, and how much did that cost over the last six weeks?" },
-                  { label: "Chart meals per driver", prompt: "Add a bar chart of meals delivered per driver to this page." },
-                  { label: "Explain the money", prompt: "In three sentences, explain where the money came from and where it went over the last six weeks." },
-                ],
-              };
-            })
-          }
+          layout={{ minWidth: 300, pagePadding: 0 }}
+          panels={{ view: { left: [], right: [] } }}
         />
       </div>
     </AgStudioProvider>
   );
+}
+
+// AG Studio scrolls its canvas inside a fixed-height box, and stretches the canvas to fill it. We'd
+// rather the charts sit on the page like any other section, so this grows the box to the bottom of the
+// lowest widget (and follows layout changes).
+function useFitHeight() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [px, setPx] = useState(900);
+
+  useEffect(() => {
+    const host = ref.current;
+    if (!host) return;
+    const measure = () => {
+      const widgets = host.querySelectorAll<HTMLElement>(".ag-studio-layout-widget");
+      if (!widgets.length) return;
+      const top = host.getBoundingClientRect().top;
+      const needed = Math.ceil(Math.max(...[...widgets].map((w) => w.getBoundingClientRect().bottom)) - top) + 2;
+      setPx((current) => (Math.abs(current - needed) > 2 ? needed : current));
+    };
+    const resize = new ResizeObserver(measure);
+    const mutations = new MutationObserver(() => {
+      host.querySelectorAll(".ag-studio-layout-widget").forEach((w) => resize.observe(w));
+      measure();
+    });
+    mutations.observe(host, { childList: true, subtree: true });
+    const first = requestAnimationFrame(measure);
+    return () => {
+      cancelAnimationFrame(first);
+      resize.disconnect();
+      mutations.disconnect();
+    };
+  }, []);
+
+  return [ref, px] as const;
 }
