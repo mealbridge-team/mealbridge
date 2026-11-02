@@ -6,7 +6,7 @@ import type { FundRow, MoneyRow, RescueRow } from "@/lib/impact-data";
 // AG Studio measures the DOM and runs its data engine in the browser, so it renders client-side only.
 const ImpactStudio = dynamic(() => import("./impact-studio"), {
   ssr: false,
-  loading: () => <div className="h-[860px] animate-pulse rounded-3xl border border-line bg-paper" />,
+  loading: () => <div className="h-[860px] animate-pulse rounded-2xl bg-surface" />,
 });
 
 export function ImpactClient(props: { rescues: RescueRow[]; money: MoneyRow[]; funds: FundRow[] }) {

@@ -30,6 +30,10 @@ A restaurant snaps a photo or types a note. Agents take it from there:
 - **Verification** needs three signals to agree: the drop-off photo (checked by Gemini), GPS at the
   shelter, and the shelter's tap. Then **PayPal Payouts** sends the reimbursement to PayPal or Venmo.
 - A **Nudge agent** drafts friendly reminders for unpaid sponsor invoices from real impact numbers.
+- A **sponsor portal** shows each sponsor's fund, the rescues it paid for, and lets them top up
+  through a PayPal invoice they can pay straight away.
+- **Shelters** can pause deliveries for the night or change how much they can take, and **drivers**
+  go on and off duty; the matcher and dispatch respect both.
 - A public **impact dashboard** built with AG Studio shows every meal, mile and dollar, and a custom
   **Insights agent** answers questions and asks AG Studio's built-in agents to build new charts.
 

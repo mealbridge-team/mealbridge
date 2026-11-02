@@ -1,11 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
+import { ArrowRight, ExternalLink, RefreshCw } from "lucide-react";
 import { getDb } from "@/db";
 import { sponsors as sponsorsTable } from "@/db/schema";
 import {
-  checkInvoices,
-  checkPayouts,
   coordinatorApprove,
   coordinatorCancel,
   coordinatorDismissAlert,
@@ -13,42 +12,52 @@ import {
   coordinatorRetryPayout,
   coordinatorSimulateInvoice,
   resetDemo,
+  syncPayPalNow,
 } from "@/app/actions";
 import { openAlerts, tripViews, type TripView } from "@/lib/queries";
 import { poolBalances } from "@/services/treasury";
 import { invoiceViews } from "@/services/invoices";
-import { paypalMode } from "@/paypal/client";
 import { formatUsd } from "@/domain/stipend";
 import { isCoordinator } from "@/lib/access";
 import { isTonight } from "@/lib/clock";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LiveMap } from "@/components/live-map";
 import { SubmitButton } from "@/components/submit-button";
-import { AREA_LABEL, Badge, Card, Empty, Money, PageTitle, RescueSteps, Skeleton, TripStatusBadge, timeLabel, type Tone } from "@/components/ui";
+import { AREA_LABEL, Badge, Container, Empty, Money, PageHeader, Panel, RescueSteps, Skeleton, smallButton, TripStatusBadge, timeLabel, type Tone } from "@/components/ui";
 import { InvoiceForm } from "./invoice-form";
 import { ReminderForm } from "./reminder-form";
 import { UnlockForm } from "./unlock-form";
 
+export const metadata = { title: "Coordinator console" };
+
 export default function CoordinatorPage() {
   return (
-    <>
-      <PageTitle eyebrow="For coordinators" title="The agents handle the routine." subtitle="You only see what needs a person: deliveries to check, trips nobody can fund yet, and sponsors to bill." />
-      <Suspense fallback={<Card><Skeleton lines={8} /></Card>}>
+    <Container>
+      <Suspense
+        fallback={
+          <>
+            <PageHeader kicker="Operations" title="Coordinator console" />
+            <div className="py-8">
+              <Skeleton lines={8} />
+            </div>
+          </>
+        }
+      >
         <CoordinatorView />
       </Suspense>
       <AutoRefresh everyMs={15_000} />
-    </>
+    </Container>
   );
 }
 
 const ALERT_LABEL: Record<string, { label: string; tone: Tone }> = {
-  unfunded_trip: { label: "Needs funding", tone: "tomato" },
-  low_fund: { label: "Fund running low", tone: "saffron" },
-  late_driver: { label: "Driver late", tone: "saffron" },
-  verification_failed: { label: "Check delivery", tone: "berry" },
-  unsafe_listing: { label: "Food safety", tone: "saffron" },
-  payout_failed: { label: "Payout failed", tone: "berry" },
-  payout_unclaimed: { label: "Payout unclaimed", tone: "saffron" },
+  unfunded_trip: { label: "Needs funding", tone: "warn" },
+  low_fund: { label: "Fund running low", tone: "warn" },
+  late_driver: { label: "No driver free", tone: "warn" },
+  verification_failed: { label: "Check delivery", tone: "bad" },
+  unsafe_listing: { label: "Food safety", tone: "warn" },
+  payout_failed: { label: "Payout failed", tone: "bad" },
+  payout_unclaimed: { label: "Payout unclaimed", tone: "warn" },
 };
 
 async function CoordinatorView() {
@@ -59,120 +68,147 @@ async function CoordinatorView() {
     tripViews(db, { limit: 60 }),
     poolBalances(db),
     invoiceViews(db),
-    db.select().from(sponsorsTable),
+    db.select().from(sponsorsTable).orderBy(sponsorsTable.name),
   ]);
   const canAct = await isCoordinator();
   const tonight = trips.filter((t) => isTonight(t.trip.createdAt));
   const review = tonight.filter((t) => t.trip.status === "needs_review");
   const stuckPayouts = tonight.filter((t) => t.trip.status === "verified");
   const unfunded = tonight.filter((t) => t.trip.status === "unfunded");
-  const pendingPayouts = tonight.filter((t) => t.trip.status === "payout_pending").length;
   const openInvoices = invoices.filter((i) => i.invoice.status === "sent");
-  const queueSize = review.length + stuckPayouts.length + unfunded.length + alerts.length;
+  // An alert about a trip that's already in the queue would say the same thing twice.
+  const queuedTrips = new Set([...review, ...stuckPayouts, ...unfunded].map((t) => t.trip.id));
+  const otherAlerts = alerts.filter((a) => !a.tripId || !queuedTrips.has(a.tripId));
+  const queueSize = review.length + stuckPayouts.length + unfunded.length + otherAlerts.length;
 
   return (
-    <div className="space-y-6">
+    <>
+      <PageHeader
+        kicker="Operations"
+        title="Coordinator console"
+        description="The agents match, fund, dispatch and pay on their own. You only see what needs a person."
+      >
+        {canAct ? <Badge tone="ok">Unlocked</Badge> : <UnlockForm />}
+      </PageHeader>
       {!canAct && (
-        <Card className="border-saffron/40 bg-saffron-soft/40">
-          <p className="mb-3 text-sm text-muted">
-            You can watch everything here. Approving payouts, re-planning trips, invoicing sponsors and resetting the demo need the coordinator passcode (judges: it&apos;s in our Devpost submission).
-          </p>
-          <UnlockForm />
-        </Card>
+        <p className="pt-4 text-sm text-muted">
+          You can watch everything. Approving payouts, re-planning trips, invoicing sponsors and resetting the demo need the passcode (judges: it&apos;s in our Devpost
+          submission).
+        </p>
       )}
 
-      <Card title="Needs you now" action={<Badge tone={queueSize ? "tomato" : "leaf"}>{queueSize ? `${queueSize} open` : "All clear"}</Badge>}>
-        {queueSize === 0 ? (
-          <Empty>Nothing needs a person right now. The agents are matching, funding, dispatching and paying on their own.</Empty>
-        ) : (
-          <ul className="grid gap-3 md:grid-cols-2">
-            {review.map((t) => (
-              <QueueItem key={t.trip.id} tone="berry" tag="Check delivery" title={`${t.restaurant.name} → ${t.shelter.name}`} body={t.trip.verification?.notes.join(" ") ?? "Signals don't agree."}>
-                {canAct && (
-                  <form action={coordinatorApprove.bind(null, t.trip.id)}>
-                    <SubmitButton pendingText="Paying…">Approve and pay <Money cents={t.trip.stipendCents} /></SubmitButton>
-                  </form>
-                )}
-              </QueueItem>
-            ))}
-            {stuckPayouts.map((t) => (
-              <QueueItem key={t.trip.id} tone="berry" tag="Payout didn't go through" title={`${t.driver?.name ?? "Driver"} · ${t.restaurant.name} → ${t.shelter.publicLabel}`} body="Verified, but PayPal hasn't accepted the payout yet.">
-                {canAct && (
-                  <form action={coordinatorRetryPayout.bind(null, t.trip.id)}>
-                    <SubmitButton pendingText="Paying…">Retry payout</SubmitButton>
-                  </form>
-                )}
-              </QueueItem>
-            ))}
-            {unfunded.map((t) => (
-              <QueueItem key={t.trip.id} tone="tomato" tag="Waiting for funding" title={`${t.listing.totalPortions} portions in ${AREA_LABEL[t.restaurant.area]}`} body={`Needs ${formatUsd(t.trip.stipendCents)} before a driver can go. Donors see it on the Donate page.`}>
-                <Link href={`/donate?trip=${t.trip.id}`} className="text-sm font-semibold text-tomato underline">
-                  Open its donation page
-                </Link>
-              </QueueItem>
-            ))}
-            {alerts.map((a) => {
-              const meta = ALERT_LABEL[a.kind] ?? { label: a.kind, tone: "muted" as Tone };
-              return (
-                <QueueItem key={a.id} tone={meta.tone} tag={meta.label} title={timeLabel(a.createdAt)} body={a.message}>
+      <div className="space-y-6 py-8">
+        <Panel title="Needs you now" action={<Badge tone={queueSize ? "warn" : "ok"}>{queueSize ? `${queueSize} open` : "All clear"}</Badge>}>
+          {queueSize === 0 ? (
+            <Empty>Nothing needs a person right now.</Empty>
+          ) : (
+            <ul className="divide-y divide-line">
+              {review.map((t) => (
+                <QueueItem
+                  key={t.trip.id}
+                  tone="bad"
+                  tag="Check delivery"
+                  title={`${t.restaurant.name} → ${t.shelter.name}`}
+                  body={t.trip.verification?.notes.filter((n) => !n.startsWith("Demo mode")).join(" ") || "The signals don't agree."}
+                  note={t.trip.verification?.notes.some((n) => n.startsWith("Demo mode")) ? "Simulated drive" : undefined}
+                >
                   {canAct && (
-                    <form action={coordinatorDismissAlert.bind(null, a.id)}>
-                      <SubmitButton variant="secondary" pendingText="…" className="px-3 py-1.5 text-xs">
-                        Dismiss
+                    <form action={coordinatorApprove.bind(null, t.trip.id)}>
+                      <SubmitButton pendingText="Paying…" className={smallButton}>
+                        Approve and pay <Money cents={t.trip.stipendCents} />
                       </SubmitButton>
                     </form>
                   )}
                 </QueueItem>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
+              ))}
+              {stuckPayouts.map((t) => (
+                <QueueItem key={t.trip.id} tone="bad" tag="Payout didn't go through" title={`${t.driver?.name ?? "Driver"} · ${t.restaurant.name} → ${t.shelter.publicLabel}`} body="Verified, but PayPal hasn't accepted the payout yet.">
+                  {canAct && (
+                    <form action={coordinatorRetryPayout.bind(null, t.trip.id)}>
+                      <SubmitButton pendingText="Paying…" className={smallButton}>
+                        Retry payout
+                      </SubmitButton>
+                    </form>
+                  )}
+                </QueueItem>
+              ))}
+              {unfunded.map((t) => (
+                <QueueItem
+                  key={t.trip.id}
+                  tone="warn"
+                  tag="Waiting for funding"
+                  title={`${t.listing.totalPortions} portions in ${AREA_LABEL[t.restaurant.area]}`}
+                  body={`Needs ${formatUsd(t.trip.stipendCents)} before a driver can go. Donors see it on the Donate page.`}
+                >
+                  <Link href={`/donate?trip=${t.trip.id}`} className="inline-flex items-center gap-1 text-sm font-semibold underline-offset-4 hover:underline">
+                    Its donation page <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                </QueueItem>
+              ))}
+              {otherAlerts.map((a) => {
+                const meta = ALERT_LABEL[a.kind] ?? { label: a.kind, tone: "neutral" as Tone };
+                return (
+                  <QueueItem key={a.id} tone={meta.tone} tag={meta.label} title={timeLabel(a.createdAt)} body={a.message}>
+                    {canAct && (
+                      <form action={coordinatorDismissAlert.bind(null, a.id)}>
+                        <SubmitButton variant="secondary" pendingText="…" className={smallButton}>
+                          Dismiss
+                        </SubmitButton>
+                      </form>
+                    )}
+                  </QueueItem>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
 
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <Card title="On the road">
-          <LiveMap height={340} />
-        </Card>
-        <Card title="Rescue funds">
-          <ul className="divide-y divide-line text-sm">
-            {pools.map((p) => (
-              <li key={p.id} className="flex justify-between gap-2 py-2">
-                <span>
-                  {p.label}
-                  {p.area && <span className="text-muted"> · {AREA_LABEL[p.area]}</span>}
-                </span>
-                <span className={`font-semibold ${p.availableCents < 500 ? "text-tomato" : ""}`}>
-                  <Money cents={p.availableCents} />
-                </span>
-              </li>
-            ))}
-          </ul>
-          <form action={checkPayouts} className="mt-4">
-            <SubmitButton variant="secondary" pendingText="Asking PayPal…" className="w-full">
-              Check payouts with PayPal{pendingPayouts ? ` (${pendingPayouts} pending)` : ""}
-            </SubmitButton>
-          </form>
-        </Card>
-      </div>
+        <div className="grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
+          <Panel title="On the road">
+            <LiveMap height={340} />
+          </Panel>
+          <Panel title="Rescue funds" description="Synced with PayPal every two minutes.">
+            <ul className="divide-y divide-line text-sm">
+              {pools.map((p) => (
+                <li key={p.id} className="flex items-baseline justify-between gap-3 py-2.5">
+                  <span className="min-w-0">
+                    {p.label}
+                    {p.area && <span className="text-muted"> · {AREA_LABEL[p.area]}</span>}
+                  </span>
+                  <span className={`font-medium ${p.availableCents < 500 ? "text-warn" : ""}`}>
+                    <Money cents={p.availableCents} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <form action={syncPayPalNow} className="mt-4">
+              <SubmitButton variant="secondary" pendingText="Asking PayPal…" className="w-full">
+                <RefreshCw className="h-4 w-4" aria-hidden /> Sync with PayPal now
+              </SubmitButton>
+            </form>
+          </Panel>
+        </div>
 
-      <Card title="Sponsors and city grants" action={<Badge tone={openInvoices.length ? "saffron" : "leaf"}>{openInvoices.length} unpaid</Badge>}>
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-          <div>
-            <p className="mb-3 text-sm text-muted">Bill a sponsor with a PayPal invoice. When they pay, the money lands in their fund and waiting trips are funded automatically.</p>
-            {canAct ? <InvoiceForm sponsors={sponsors.map((s) => ({ id: s.id, name: s.name }))} /> : <p className="text-sm text-muted">Unlock to send invoices.</p>}
-          </div>
-          <div>
+        <Panel
+          title="Sponsors and city grants"
+          description="Bill a sponsor with a PayPal invoice. Paid invoices land in their fund and fund waiting trips automatically. Sponsors can also top up from their own portal."
+          action={<Badge tone={openInvoices.length ? "warn" : "ok"}>{openInvoices.length} unpaid</Badge>}
+        >
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr]">
+            <div>{canAct ? <InvoiceForm sponsors={sponsors.map((s) => ({ id: s.id, name: s.name }))} /> : <Empty>Unlock to send invoices.</Empty>}</div>
             {invoices.length === 0 ? (
               <Empty>No invoices yet.</Empty>
             ) : (
-              <ul className="space-y-2 text-sm">
+              <ul className="divide-y divide-line border-t border-line lg:border-t-0">
                 {invoices.slice(0, 6).map(({ invoice, sponsor }) => (
-                  <li key={invoice.id} className="rounded-2xl border border-line p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-semibold">{sponsor.name}</span>
-                      <span className="flex items-center gap-2">
+                  <li key={invoice.id} className="space-y-2 py-3 lg:first:pt-0">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <Link href={`/sponsor?sp=${sponsor.id}`} className="text-sm font-semibold underline-offset-4 hover:underline">
+                        {sponsor.name}
+                      </Link>
+                      <span className="flex items-center gap-2 text-sm">
                         <Money cents={invoice.amountCents} />
-                        <Badge tone={invoice.status === "paid" ? "leaf" : invoice.status === "sent" ? "saffron" : "muted"}>{invoice.status === "sent" ? "Unpaid" : invoice.status}</Badge>
+                        <Badge tone={invoice.status === "paid" ? "ok" : invoice.status === "sent" ? "warn" : "neutral"}>{invoice.status === "sent" ? "Unpaid" : invoice.status === "paid" ? "Paid" : "Cancelled"}</Badge>
                       </span>
                     </div>
                     <p className="text-xs text-muted">
@@ -180,19 +216,19 @@ async function CoordinatorView() {
                       {invoice.payerViewUrl && (
                         <>
                           {" · "}
-                          <a href={invoice.payerViewUrl} target="_blank" rel="noreferrer" className="text-sky underline">
-                            Open in PayPal
+                          <a href={invoice.payerViewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-ink underline underline-offset-2">
+                            PayPal <ExternalLink className="h-3 w-3" aria-hidden />
                           </a>
                         </>
                       )}
                     </p>
                     {invoice.status === "sent" && canAct && (
-                      <div className="mt-2 flex flex-wrap items-start gap-2">
+                      <div className="flex flex-wrap items-start gap-2">
                         <ReminderForm invoiceId={invoice.id} />
                         {invoice.paypalInvoiceId.startsWith("MOCK-") && (
                           <form action={coordinatorSimulateInvoice.bind(null, invoice.id)}>
-                            <SubmitButton variant="secondary" pendingText="…" className="px-3 py-1.5 text-xs">
-                              Simulate sponsor paying
+                            <SubmitButton variant="secondary" pendingText="…" className={smallButton}>
+                              Simulate payment
                             </SubmitButton>
                           </form>
                         )}
@@ -202,82 +238,84 @@ async function CoordinatorView() {
                 ))}
               </ul>
             )}
-            {openInvoices.length > 0 && paypalMode() === "sandbox" && (
-              <form action={checkInvoices} className="mt-3">
-                <SubmitButton variant="secondary" pendingText="Asking PayPal…" className="w-full">
-                  Check invoices with PayPal
-                </SubmitButton>
-              </form>
-            )}
           </div>
-        </div>
-      </Card>
+        </Panel>
 
-      <Card title="Tonight's rescues" action={<span className="text-xs text-muted">{tonight.length} in the last 14 hours</span>}>
-        {tonight.length === 0 ? (
-          <Empty>No rescues yet tonight. Post food from the Restaurant screen to start one.</Empty>
-        ) : (
-          <ul className="space-y-3">
-            {tonight.map((t) => (
-              <TripRow key={t.trip.id} t={t} canAct={canAct} />
-            ))}
-          </ul>
+        <Panel title="Tonight's rescues" action={<span className="text-sm text-muted">{tonight.length} in the last 14 hours</span>}>
+          {tonight.length === 0 ? (
+            <Empty>No rescues yet tonight. Post food from the Restaurants page to start one.</Empty>
+          ) : (
+            <ul className="divide-y divide-line">
+              {tonight.map((t) => (
+                <TripRow key={t.trip.id} t={t} canAct={canAct} />
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        {canAct && (
+          <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-line p-5">
+            <div>
+              <p className="text-sm font-semibold">Demo tools</p>
+              <p className="text-sm text-muted">Reload six weeks of history and a fresh evening. Clears tonight&apos;s test rescues.</p>
+            </div>
+            <form action={resetDemo}>
+              <SubmitButton variant="danger" pendingText="Resetting…" confirm="Reset all demo data? Tonight's test rescues, payments and invoices will be cleared.">
+                Reset the demo data
+              </SubmitButton>
+            </form>
+          </section>
         )}
-      </Card>
-
-      {canAct && (
-        <form action={resetDemo} className="flex justify-end">
-          <SubmitButton variant="danger" pendingText="Resetting…">
-            Reset the demo data
-          </SubmitButton>
-        </form>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
-function QueueItem({ tone, tag, title, body, children }: { tone: Tone; tag: string; title: string; body: string; children?: React.ReactNode }) {
+function QueueItem({ tone, tag, title, body, note, children }: { tone: Tone; tag: string; title: string; body: string; note?: string; children?: React.ReactNode }) {
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border border-line p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={tone}>{tag}</Badge>
-        <span className="text-sm font-semibold">{title}</span>
+    <li className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 md:flex-row md:items-center md:justify-between">
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={tone}>{tag}</Badge>
+          <span className="text-sm font-semibold">{title}</span>
+          {note && <Badge>{note}</Badge>}
+        </div>
+        <p className="text-sm text-muted">{body}</p>
       </div>
-      <p className="text-sm text-muted">{body}</p>
-      {children && <div>{children}</div>}
+      {children && <div className="shrink-0">{children}</div>}
     </li>
   );
 }
 
 function TripRow({ t, canAct }: { t: TripView; canAct: boolean }) {
   return (
-    <li className="grid gap-3 rounded-2xl bg-cream p-4 md:grid-cols-[1.4fr_1fr_auto] md:items-center">
-      <div>
-        <p className="font-semibold">
+    <li className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[1.5fr_1fr_auto] md:items-center">
+      <div className="min-w-0">
+        <p className="font-medium">
           {t.restaurant.name} → {t.shelter.name}
         </p>
-        <p className="text-xs text-muted">
-          {t.listing.totalPortions} portions · {t.driver?.name ?? "no driver yet"} · drop-off {timeLabel(t.trip.plannedDropoffAt)} · <Money cents={t.trip.stipendCents} /> from{" "}
+        <p className="text-sm text-muted">
+          {t.listing.totalPortions} portions · {t.driver?.name ?? "no driver yet"} · by {timeLabel(t.trip.plannedDropoffAt)} · <Money cents={t.trip.stipendCents} /> from{" "}
           {t.funding.map((f) => f.label).join(" + ") || "nobody yet"}
         </p>
-        <p className="mt-1 text-xs italic text-muted">&ldquo;{t.match.reason}&rdquo;</p>
+        <p className="mt-1 text-xs text-muted">&ldquo;{t.match.reason}&rdquo;</p>
       </div>
       <div className="space-y-2">
         <TripStatusBadge status={t.trip.status} />
         <RescueSteps status={t.trip.status} />
       </div>
       {canAct && (
-        <div className="flex flex-wrap gap-2 md:flex-col">
+        <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
           {t.trip.status === "assigned" && (
             <form action={coordinatorReassign.bind(null, t.trip.id)}>
-              <SubmitButton variant="secondary" pendingText="Re-planning…" className="px-3 py-1.5 text-xs">
+              <SubmitButton variant="secondary" pendingText="Re-planning…" className={smallButton}>
                 Driver dropped out
               </SubmitButton>
             </form>
           )}
           {["unfunded", "funded", "assigned"].includes(t.trip.status) && (
             <form action={coordinatorCancel.bind(null, t.trip.id)}>
-              <SubmitButton variant="danger" pendingText="Cancelling…" className="px-3 py-1.5 text-xs">
+              <SubmitButton variant="danger" pendingText="Cancelling…" className={smallButton} confirm="Cancel this rescue? Its reserved money goes back to the fund.">
                 Cancel
               </SubmitButton>
             </form>

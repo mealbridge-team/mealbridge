@@ -107,3 +107,24 @@ describe("one rescue, end to end (demo mode)", () => {
     expect(result?.next?.driverName).toBe(next.name);
   });
 });
+
+describe("shelter and driver availability", () => {
+  it("never matches a shelter that paused deliveries for the night", async () => {
+    const first = await postAndMatch("30 portions chicken biryani, kept hot");
+    await db.update(shelters).set({ acceptingFood: false }).where(eq(shelters.id, first.shelter.id));
+
+    const { listing } = await createListing(db, { restaurantId: seeded.restaurants.saffron.id, notes: "30 portions chicken biryani, kept hot", now: evening });
+    const outcome = await matchListing(db, listing.id, evening);
+    if (outcome.kind === "matched") expect(outcome.shelterName).not.toBe(first.shelter.name);
+  });
+
+  it("only books drivers who are on duty", async () => {
+    await db.update(drivers).set({ available: false });
+    const { listing } = await createListing(db, { restaurantId: seeded.restaurants.saffron.id, notes: "30 portions veg pasta, kept hot", now: evening });
+    const outcome = await matchListing(db, listing.id, evening);
+    expect(outcome).toMatchObject({ kind: "matched", funded: true });
+    const [trip] = await db.select().from(trips).where(eq(trips.id, (outcome as { tripId: string }).tripId));
+    expect(trip.driverId).toBeNull();
+    expect(trip.status).toBe("funded");
+  });
+});

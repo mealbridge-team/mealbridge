@@ -7,7 +7,7 @@ import { IntakeUnavailableError } from "@/agents/intake";
 import { allow } from "@/lib/rate-limit";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { alerts } from "@/db/schema";
+import { alerts, drivers, needs, shelters } from "@/db/schema";
 import { resetDemoData } from "@/db/seed";
 import {
   approveDelivery,
@@ -19,12 +19,12 @@ import {
 } from "@/services/delivery";
 import { createListing } from "@/services/listings";
 import { cancelTrip, matchListing, reassignTrip, type MatchOutcome } from "@/services/pipeline";
-import { refreshPendingPayouts } from "@/services/treasury";
 import { requireCoordinator, unlockCoordinator } from "@/lib/access";
 import { requestOrigin } from "@/lib/origin";
 import { PayPalError } from "@/paypal/client";
-import { draftReminder, invoiceSponsor, InvoiceError, refreshInvoices, sendReminder, simulateInvoicePayment } from "@/services/invoices";
-import { endSubscription, startSubscription, SubscriptionError, syncAllPlanPayments, syncPlanPayments } from "@/services/subscriptions";
+import { draftReminder, invoiceSponsor, InvoiceError, sendReminder, simulateInvoicePayment } from "@/services/invoices";
+import { syncWithPayPal } from "@/services/paypal-sync";
+import { endSubscription, startSubscription, SubscriptionError } from "@/services/subscriptions";
 
 // Prototype note: there is no sign-in yet. Each screen picks who you are from a list, so these
 // actions trust the ids they're given. Real accounts are out of scope for the hackathon.
@@ -100,6 +100,30 @@ export async function shelterConfirm(tripId: string, accepted: boolean) {
   refresh();
 }
 
+// Shelters say how much they can take tonight, or pause deliveries; the matcher respects both.
+export async function shelterSetAccepting(shelterId: string, accepting: boolean) {
+  await getDb().update(shelters).set({ acceptingFood: accepting }).where(eq(shelters.id, shelterId));
+  refresh();
+}
+
+export async function shelterSetCapacity(shelterId: string, form: FormData) {
+  const portions = Math.round(Number(form.get("capacity")));
+  if (!Number.isFinite(portions) || portions < 5 || portions > 2000) return;
+  await getDb().update(shelters).set({ capacityPortions: portions }).where(eq(shelters.id, shelterId));
+  refresh();
+}
+
+export async function shelterNeedFilled(needId: string) {
+  await getDb().update(needs).set({ status: "filled" }).where(eq(needs.id, needId));
+  refresh();
+}
+
+// Drivers go on and off duty; dispatch only books available drivers.
+export async function driverSetAvailable(driverId: string, available: boolean) {
+  await getDb().update(drivers).set({ available }).where(eq(drivers.id, driverId));
+  refresh();
+}
+
 export async function unlockCoordinatorAction(_prev: string | null, form: FormData): Promise<string | null> {
   if (!(await unlockCoordinator(String(form.get("passcode") ?? "")))) return "That passcode isn't right.";
   refresh();
@@ -136,10 +160,11 @@ export async function coordinatorDismissAlert(alertId: string) {
   refresh();
 }
 
-export async function checkPayouts() {
-  // Only reads PayPal's state and settles the ledger, so it's safe for anyone to trigger.
-  await refreshPendingPayouts(getDb());
-  await syncAllPlanPayments(getDb());
+export async function syncPayPalNow() {
+  // Only reads PayPal's state and settles the ledger, so it's safe for anyone to trigger. The same
+  // sync also runs in the background every two minutes.
+  if (!allow(`paypal-sync:${await clientIp()}`, 6, 60_000)) return;
+  await syncWithPayPal(getDb());
   refresh();
 }
 
@@ -162,17 +187,6 @@ export async function subscribeCompliancePlan(restaurantId: string) {
   redirect(target);
 }
 
-// PayPal takes the first plan payment a few minutes after approval; this asks for it directly.
-export async function checkPlanPayment(restaurantId: string) {
-  if (!allow(`plan-check:${await clientIp()}`, 10, 60_000)) return;
-  try {
-    await syncPlanPayments(getDb(), restaurantId);
-  } catch (err) {
-    console.error("plan payment check failed", err);
-  }
-  refresh();
-}
-
 export async function cancelCompliancePlan(restaurantId: string) {
   await endSubscription(getDb(), restaurantId);
   refresh();
@@ -192,18 +206,43 @@ export async function coordinatorInvoice(_prev: InvoiceFormState, form: FormData
     refresh();
     return { ok: true, message: `Invoice ${invoice.invoiceNumber} sent through PayPal.` };
   } catch (err) {
-    if (err instanceof InvoiceError) return { ok: false, message: err.message };
-    if (err instanceof PayPalError && err.status === 403) {
-      return { ok: false, message: "PayPal says this app isn't allowed to send invoices yet: turn on Invoicing in the REST app's features." };
-    }
-    console.error("invoice failed", err);
-    return { ok: false, message: "PayPal didn't accept that invoice. Check the server log." };
+    return invoiceFailure(err);
   }
 }
 
-export async function checkInvoices() {
-  // Read-only against PayPal, like checkPayouts, so anyone may trigger it.
-  await refreshInvoices(getDb());
+function invoiceFailure(err: unknown): { ok: false; message: string } {
+  if (err instanceof InvoiceError) return { ok: false, message: err.message };
+  if (err instanceof PayPalError && err.status === 403) {
+    return { ok: false, message: "PayPal says this app isn't allowed to send invoices yet: turn on Invoicing in the REST app's features." };
+  }
+  console.error("invoice failed", err);
+  return { ok: false, message: "PayPal didn't accept that invoice. Please try again in a moment." };
+}
+
+// Sponsor portal: a sponsor tops up its own fund. The invoice is created and sent through PayPal,
+// and the portal links straight to PayPal's page to pay it.
+export type TopUpState = { ok: true; message: string; payUrl: string | null } | { ok: false; message: string } | null;
+
+export async function sponsorTopUp(sponsorId: string, _prev: TopUpState, form: FormData): Promise<TopUpState> {
+  if (!allow(`sponsor-top-up:${await clientIp()}`, 4, 10 * 60_000)) {
+    return { ok: false, message: "A few invoices were just created. Please pay those first, or wait a few minutes." };
+  }
+  try {
+    const invoice = await invoiceSponsor(getDb(), {
+      sponsorId,
+      amountCents: Math.round(Number(form.get("amount") ?? 0) * 100),
+      memo: String(form.get("memo") ?? ""),
+    });
+    refresh();
+    return { ok: true, message: `Invoice ${invoice.invoiceNumber} is ready.`, payUrl: invoice.payerViewUrl };
+  } catch (err) {
+    return invoiceFailure(err);
+  }
+}
+
+// Demo mode only (no PayPal keys): stands in for paying a simulated invoice.
+export async function sponsorSimulatePayment(invoiceId: string) {
+  await simulateInvoicePayment(getDb(), invoiceId);
   refresh();
 }
 

@@ -1,0 +1,1 @@
+ALTER TABLE "shelters" ADD COLUMN "accepting_food" boolean DEFAULT true NOT NULL;

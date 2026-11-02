@@ -1,71 +1,103 @@
 @import "tailwindcss";
 
-/* Warm and human: a food-rescue cause, not a fintech dashboard. Off-white paper, deep green for
-   "rescued", tomato for "needs a hand", amber for waiting. */
+/* MealBridge: quiet, editorial, mostly black on white. One brand green carries the identity;
+   orange is reserved for giving (Donate). Status colours only ever appear with a text label. */
 :root {
-  --cream: #f8f3ea;
-  --paper: #fffdf9;
-  --ink: #1e2a23;
-  --muted: #6c675d;
-  --line: #e8dfcf;
-  --leaf: #1d5c40;
-  --leaf-soft: #e2eee5;
-  --tomato: #d4502c;
-  --tomato-soft: #fbe5dc;
-  --saffron: #b7791a;
-  --saffron-soft: #faefd8;
-  --berry: #b0353a;
-  --berry-soft: #f9e3e2;
-  --sky: #2b6693;
-  --sky-soft: #e2edf6;
-  --shadow: 0 1px 2px rgb(60 40 10 / 0.05), 0 8px 24px -12px rgb(60 40 10 / 0.18);
+  --bg: #ffffff;
+  --surface: #f6f5f1;
+  --ink: #111412;
+  --muted: #5b605c;
+  --line: #e3e2dc;
+  --brand: #0d5a3b;
+  --brand-hover: #0a4830;
+  --brand-soft: #e7f0eb;
+  --accent: #c2410c;
+  --accent-hover: #a8380a;
+  --ok: #0d5a3b;
+  --ok-soft: #e7f0eb;
+  --warn: #8a5300;
+  --warn-soft: #fbf1df;
+  --bad: #b42318;
+  --bad-soft: #fcebe9;
+  --info: #1d5a9e;
+  --info-soft: #e9f0f9;
+  --on-brand: #ffffff;
+  --on-accent: #ffffff;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --cream: #15130f;
-    --paper: #1e1b16;
-    --ink: #f1ece2;
-    --muted: #a8a094;
-    --line: #34302a;
-    --leaf: #6cc496;
-    --leaf-soft: #1b3226;
-    --tomato: #f08a68;
-    --tomato-soft: #3d231a;
-    --saffron: #e6b45a;
-    --saffron-soft: #382c16;
-    --berry: #ef8487;
-    --berry-soft: #3b2223;
-    --sky: #86b8e2;
-    --sky-soft: #1a2a39;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+    --bg: #0e100f;
+    --surface: #161917;
+    --ink: #ecefeb;
+    --muted: #a2a8a3;
+    --line: #2a2e2b;
+    --brand: #5fc293;
+    --brand-hover: #7dd3a9;
+    --brand-soft: #14281e;
+    --accent: #f27b4a;
+    --accent-hover: #f59569;
+    --ok: #5fc293;
+    --ok-soft: #14281e;
+    --warn: #e7b453;
+    --warn-soft: #2b2312;
+    --bad: #f2948a;
+    --bad-soft: #2e1715;
+    --info: #8fb8f2;
+    --info-soft: #14213a;
+    --on-brand: #0e100f;
+    --on-accent: #1a0d06;
+    color-scheme: dark;
   }
 }
 
 @theme inline {
-  --color-cream: var(--cream);
-  --color-paper: var(--paper);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --color-leaf: var(--leaf);
-  --color-leaf-soft: var(--leaf-soft);
-  --color-tomato: var(--tomato);
-  --color-tomato-soft: var(--tomato-soft);
-  --color-saffron: var(--saffron);
-  --color-saffron-soft: var(--saffron-soft);
-  --color-berry: var(--berry);
-  --color-berry-soft: var(--berry-soft);
-  --color-sky: var(--sky);
-  --color-sky-soft: var(--sky-soft);
-  --shadow-card: var(--shadow);
-  --font-sans: var(--font-geist-sans);
-  --font-display: var(--font-fraunces);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-on-brand: var(--on-brand);
+  --color-on-accent: var(--on-accent);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter-tight), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  background: var(--cream);
+  background: var(--bg);
   color: var(--ink);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+button,
+summary,
+[role="button"] {
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 /* Leaflet markers drawn with HTML so there are no image assets to ship. */
@@ -73,18 +105,22 @@ body {
   display: grid;
   place-items: center;
   border-radius: 9999px;
-  border: 2px solid var(--paper);
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
-  color: white;
-  font-size: 14px;
+  border: 2px solid var(--bg);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  color: #fff;
+}
+.mb-pin svg {
+  width: 55%;
+  height: 55%;
 }
 .mb-pin-driver {
   animation: mb-pulse 2s ease-out infinite;
 }
 @keyframes mb-pulse {
-  0% { box-shadow: 0 0 0 0 rgb(212 80 44 / 0.45); }
-  100% { box-shadow: 0 0 0 14px rgb(212 80 44 / 0); }
+  0% { box-shadow: 0 0 0 0 rgb(13 90 59 / 0.45); }
+  100% { box-shadow: 0 0 0 14px rgb(13 90 59 / 0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .mb-pin-driver { animation: none; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

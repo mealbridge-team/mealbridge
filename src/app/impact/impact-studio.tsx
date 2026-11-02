@@ -13,6 +13,8 @@ import {
   type AgStudioMode,
 } from "ag-studio";
 import type { FundRow, MoneyRow, RescueRow } from "@/lib/impact-data";
+import { Sparkles } from "lucide-react";
+import { buttonClass } from "@/components/ui";
 import { geminiAdapter } from "./gemini-adapter";
 
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -171,32 +173,33 @@ const INITIAL_STATE = {
   ],
 } as unknown as AgReportState;
 
-const warmTheme = studioTheme.withParams({
-  accentColor: "#1d5c40",
-  backgroundColor: "#fffdf9",
-  foregroundColor: "#1e2a23",
-  textColor: "#1e2a23",
-  subtleTextColor: "#6c675d",
-  borderColor: "#e8dfcf",
-  borderRadius: 12,
-  fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-  studioCanvasBackgroundColor: "#f8f3ea",
-  studioWidgetBackgroundColor: "#fffdf9",
-  studioWidgetBorderRadius: 18,
-  studioWidgetTitleFontFamily: "var(--font-fraunces), Georgia, serif",
-  studioWidgetTitleFontSize: 17,
+// Matches the site: white surfaces, hairline borders, one brand green. The chart palette leads with
+// the green and stays distinguishable for colour-blind readers (blue, orange, then neutrals).
+const mealbridgeTheme = studioTheme.withParams({
+  accentColor: "#0d5a3b",
+  backgroundColor: "#ffffff",
+  foregroundColor: "#111412",
+  textColor: "#111412",
+  subtleTextColor: "#5b605c",
+  borderColor: "#e3e2dc",
+  borderRadius: 8,
+  fontFamily: "var(--font-inter), system-ui, sans-serif",
+  studioCanvasBackgroundColor: "#f6f5f1",
+  studioWidgetBackgroundColor: "#ffffff",
+  studioWidgetBorderRadius: 12,
+  studioWidgetTitleFontFamily: "var(--font-inter-tight), var(--font-inter), system-ui, sans-serif",
+  studioWidgetTitleFontSize: 15,
   studioWidgetTitleFontWeight: 600,
-  chartAccentColor: "#d4502c",
-  // MealBridge's own palette: green for rescued, tomato, amber, then calmer supporting tones.
-  chartPaletteFills1Color: "#1d5c40",
-  chartPaletteFills2Color: "#d4502c",
-  chartPaletteFills3Color: "#e0a33a",
-  chartPaletteFills4Color: "#2b6693",
-  chartPaletteFills5Color: "#8fb89a",
-  chartPaletteFills6Color: "#b06d4f",
-  chartPaletteFills7Color: "#7c5c8a",
-  chartPaletteFills8Color: "#c9b48a",
-  chartFontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+  chartAccentColor: "#0d5a3b",
+  chartPaletteFills1Color: "#0d5a3b",
+  chartPaletteFills2Color: "#1d5a9e",
+  chartPaletteFills3Color: "#d97a2b",
+  chartPaletteFills4Color: "#7fb59a",
+  chartPaletteFills5Color: "#8fa9cf",
+  chartPaletteFills6Color: "#5b605c",
+  chartPaletteFills7Color: "#e8c39a",
+  chartPaletteFills8Color: "#b9bdb8",
+  chartFontFamily: "var(--font-inter), system-ui, sans-serif",
 });
 
 // A MealBridge tool the built-in agents don't have: what's happening on the road right now.
@@ -231,7 +234,7 @@ export default function ImpactStudio({ rescues, money, funds }: { rescues: Rescu
 
   return (
     <AgStudioProvider modules={[AgStudioAiModule]} licenseKey={process.env.NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY}>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           {mode === "view"
             ? "Filter, cross-filter and drill in. Click any bar or slice to filter the rest."
@@ -240,17 +243,23 @@ export default function ImpactStudio({ rescues, money, funds }: { rescues: Rescu
         <button
           type="button"
           onClick={() => setMode(mode === "view" ? "edit" : "view")}
-          className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 ${mode === "view" ? "bg-tomato" : "bg-leaf"}`}
+          className={mode === "view" ? buttonClass.primary : buttonClass.secondary}
         >
-          {mode === "view" ? "✦ Ask the Insights agent" : "Back to the dashboard"}
+          {mode === "view" ? (
+            <>
+              <Sparkles className="h-4 w-4" aria-hidden /> Ask the Insights agent
+            </>
+          ) : (
+            "Back to the dashboard"
+          )}
         </button>
       </div>
-      <div className="h-[860px] overflow-hidden rounded-3xl border border-line shadow-card">
+      <div className="h-[860px] overflow-hidden rounded-2xl border border-line">
         <AgStudio
           data={data}
           initialState={INITIAL_STATE}
           mode={mode}
-          theme={warmTheme}
+          theme={mealbridgeTheme}
           panels={{ edit: { left: ["data"], right: ["ai", "edit"] }, view: { left: [], right: [] } }}
           ai={({ api }) =>
             createAiHarness(api, ({ tools, builtIn }) => {

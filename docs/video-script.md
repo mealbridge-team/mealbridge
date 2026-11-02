@@ -25,7 +25,7 @@ compliance plan, a PayPal subscription."
 ## 0:40–1:10 · The driver and the live map
 
 **Show:** Driver screen: the job, "$4 reserved for you". Press Demo: simulate the drive. Switch to
-the Shelter screen: the car moving on the map with an ETA. Back to Driver: photo, Picked up, then
+the Shelter screen: the car moving on the map with an ETA. Back to Driver: photo, I've picked it up, then
 Delivered at the shelter.
 
 **Say:** "Maya, a volunteer, gets the job with the reimbursement already reserved. The shelter
@@ -42,8 +42,9 @@ before she's home. If anything doesn't match, it goes to a person, never an auto
 
 ## 1:35–2:00 · Where the money comes from
 
-**Show:** Donate page: "Waiting for funding", fund a waiting trip with PayPal Checkout. Coordinator:
-send a sponsor a PayPal invoice, press "Draft a friendly reminder" and show the Nudge agent's text.
+**Show:** Donate page: "Waiting for funding", fund a waiting trip with PayPal Checkout. Sponsors page:
+the fund, the rescues it paid for, and "Get a PayPal invoice" to top up. Coordinator console: press
+"Draft a friendly reminder" on an unpaid invoice and show the Nudge agent's text.
 
 **Say:** "Restaurants never pay per pickup. Trips are funded by the restaurant's plan, then donors who
 choose a waiting rescue, then sponsors and city grants billed with PayPal invoices. Our Nudge agent

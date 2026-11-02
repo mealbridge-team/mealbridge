@@ -1,21 +1,27 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { connection } from "next/server";
 import { getDb } from "@/db";
 import { tripViews } from "@/lib/queries";
 import { paypalMode } from "@/paypal/client";
 import { poolBalances } from "@/services/treasury";
-import { AREA_LABEL, Card, Empty, Money, PageTitle, Skeleton } from "@/components/ui";
+import { AREA_LABEL, buttonClass, Container, Empty, Money, PageHeader, Panel, Skeleton, smallButton } from "@/components/ui";
 import { DonateForm } from "./donate-form";
-import Link from "next/link";
+
+export const metadata = { title: "Donate" };
 
 export default function DonatePage({ searchParams }: PageProps<"/donate">) {
   return (
-    <>
-      <PageTitle eyebrow="For donors" title="Fund a rescue tonight" subtitle="Every dollar reimburses a volunteer driver's fuel for a delivery you can see. Nothing goes to overhead." />
-      <Suspense fallback={<Card><Skeleton lines={6} /></Card>}>
+    <Container size="app">
+      <PageHeader
+        kicker="Donate"
+        title="Fund a rescue tonight"
+        description="Every dollar reimburses a volunteer driver's fuel for a delivery you can see on the impact dashboard. Nothing goes to overhead."
+      />
+      <Suspense fallback={<div className="py-8"><Skeleton lines={6} /></div>}>
         <DonateView searchParams={searchParams} />
       </Suspense>
-    </>
+    </Container>
   );
 }
 
@@ -31,46 +37,53 @@ async function DonateView({ searchParams }: { searchParams: PageProps<"/donate">
   const areaFund = chosen && funds.find((f) => f.kind === "donor_area" && f.area === chosen.restaurant.area);
 
   return (
-    <div className="grid gap-5 md:grid-cols-[3fr_2fr]">
-      <Card title={chosen ? `Fund the ${chosen.restaurant.name} pickup` : "Give to a rescue fund"}>
+    <div className="grid items-start gap-6 py-8 lg:grid-cols-[1.4fr_1fr]">
+      <Panel
+        title={chosen ? `Fund the ${chosen.restaurant.name} pickup` : "Give to a rescue fund"}
+        description={chosen ? `${chosen.listing.totalPortions} portions waiting for a driver in ${AREA_LABEL[chosen.restaurant.area]}. Your gift sends one now.` : undefined}
+      >
         <DonateForm
           key={chosen?.trip.id ?? "general"}
           funds={funds.map((f) => ({ id: f.id, label: f.label }))}
           initialFundId={areaFund?.id ?? funds[0].id}
           tripId={chosen?.trip.id}
+          tripAmountCents={chosen?.trip.stipendCents}
           mode={paypalMode()}
         />
-      </Card>
+      </Panel>
 
-      <div className="space-y-5">
-        <Card title="Waiting for funding">
+      <div className="space-y-6">
+        <Panel title="Waiting for funding" description={waiting.length ? "These pickups go as soon as they're covered." : undefined}>
           {waiting.length === 0 ? (
-            <Empty>Every pickup tonight is funded. Thank you!</Empty>
+            <Empty>Every pickup tonight is funded. Thank you.</Empty>
           ) : (
-            <ul className="space-y-2 text-sm">
+            <ul className="divide-y divide-line">
               {waiting.map((w) => (
-                <li key={w.trip.id} className="flex items-center justify-between gap-2 rounded-xl border border-line p-3">
-                  <span>
-                    {w.listing.totalPortions} portions in {AREA_LABEL[w.restaurant.area]} · <Money cents={w.trip.stipendCents} />
+                <li key={w.trip.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                  <span className="text-sm">
+                    {w.listing.totalPortions} portions in {AREA_LABEL[w.restaurant.area]}
+                    <span className="block text-xs text-muted">
+                      needs <Money cents={w.trip.stipendCents} />
+                    </span>
                   </span>
-                  <Link href={`/donate?trip=${w.trip.id}`} className="rounded-full bg-tomato px-3 py-1 text-xs font-semibold text-white">
-                    Fund this
+                  <Link href={`/donate?trip=${w.trip.id}`} className={`${w.trip.id === chosen?.trip.id ? buttonClass.primary : buttonClass.secondary} ${smallButton}`}>
+                    {w.trip.id === chosen?.trip.id ? "Selected" : "Fund this"}
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </Card>
-        <Card title="Funds right now">
+        </Panel>
+        <Panel title="Funds right now">
           <ul className="divide-y divide-line text-sm">
             {funds.map((f) => (
-              <li key={f.id} className="flex justify-between py-2">
+              <li key={f.id} className="flex justify-between gap-3 py-2.5">
                 <span>{f.label}</span>
                 <Money cents={f.availableCents} />
               </li>
             ))}
           </ul>
-        </Card>
+        </Panel>
       </div>
     </div>
   );

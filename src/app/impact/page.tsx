@@ -2,23 +2,25 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { getDb } from "@/db";
 import { impactData } from "@/lib/impact-data";
-import { PageTitle } from "@/components/ui";
+import { Container, PageHeader } from "@/components/ui";
 import { ImpactClient } from "./impact-client";
 
-export const metadata = { title: "Impact · MealBridge" };
+export const metadata = { title: "Impact" };
 
 export default function ImpactPage() {
   return (
-    <>
-      <PageTitle
-        eyebrow="Public impact dashboard"
+    <Container>
+      <PageHeader
+        kicker="Public impact dashboard"
         title="Every meal, every mile, every dollar."
-        subtitle="Live from MealBridge's own ledger and trip records, built with AG Studio. Ask the Insights agent (Gemini) anything about it."
+        description="Live from MealBridge's own ledger and trip records, built with AG Studio. Ask the Insights agent anything about it."
       />
-      <Suspense fallback={<div className="h-[860px] animate-pulse rounded-3xl border border-line bg-paper" />}>
-        <ImpactData />
-      </Suspense>
-    </>
+      <div className="py-8">
+        <Suspense fallback={<div className="h-[860px] animate-pulse rounded-2xl bg-surface" />}>
+          <ImpactData />
+        </Suspense>
+      </div>
+    </Container>
   );
 }
 

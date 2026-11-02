@@ -1,14 +1,14 @@
 import Link from "next/link";
+import { Check, ChevronDown } from "lucide-react";
 
-// Stand-in for sign-in during the hackathon: pick which restaurant, driver or shelter you are.
+// Stand-in for sign-in during the hackathon: choose which restaurant, driver, shelter or sponsor
+// you are. Kept small and labelled so it reads as a demo control, not part of the product.
 export function Picker({
-  label,
   items,
   selectedId,
   param,
   path,
 }: {
-  label: string;
   items: { id: string; name: string }[];
   selectedId: string;
   param: string;
@@ -16,20 +16,22 @@ export function Picker({
 }) {
   const selected = items.find((i) => i.id === selectedId);
   return (
-    <details className="group relative mb-5 inline-block text-sm">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-dashed border-line bg-paper px-3 py-1.5 text-muted hover:text-ink">
-        <span className="text-xs uppercase tracking-wider">{label}</span>
-        <span className="font-semibold text-ink">{selected?.name}</span>
-        <span aria-hidden className="transition group-open:rotate-180">▾</span>
+    <details className="group relative inline-block text-sm">
+      <summary className="flex min-h-11 list-none items-center gap-2 rounded-lg border border-line bg-bg px-3.5 hover:bg-surface [&::-webkit-details-marker]:hidden">
+        <span className="text-muted">Viewing as</span>
+        <span className="max-w-[14rem] truncate font-semibold">{selected?.name}</span>
+        <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" aria-hidden />
       </summary>
-      <ul className="absolute z-[1000] mt-2 min-w-64 overflow-hidden rounded-2xl border border-line bg-paper py-1 shadow-card">
+      <ul className="absolute right-0 z-[1000] mt-2 max-h-80 w-72 overflow-auto rounded-xl border border-line bg-bg p-1 shadow-lg">
         {items.map((item) => (
           <li key={item.id}>
             <Link
               href={`${path}?${param}=${item.id}`}
-              className={`block px-4 py-2 hover:bg-cream ${item.id === selectedId ? "font-semibold text-leaf" : ""}`}
+              className="flex min-h-10 items-center justify-between gap-2 rounded-lg px-3 hover:bg-surface"
+              aria-current={item.id === selectedId ? "true" : undefined}
             >
-              {item.name}
+              <span className={item.id === selectedId ? "font-semibold" : ""}>{item.name}</span>
+              {item.id === selectedId && <Check className="h-4 w-4 text-brand" aria-hidden />}
             </Link>
           </li>
         ))}

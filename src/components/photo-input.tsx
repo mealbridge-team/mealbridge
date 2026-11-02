@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Camera, RefreshCw } from "lucide-react";
 
 const MAX_EDGE = 1280;
 
@@ -39,16 +40,22 @@ export function PhotoInput({ name = "photo", label, required = false }: { name?:
   }
 
   return (
-    <label className="block cursor-pointer">
-      <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={onPick} required={required && !preview} />
+    <label className="group block cursor-pointer">
+      <input type="file" accept="image/*" capture="environment" className="peer sr-only" onChange={onPick} required={required && !preview} />
       <input ref={hidden} type="file" name={name} className="hidden" />
       {preview ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview} alt="Selected photo" className="h-48 w-full rounded-xl object-cover" />
+        <span className="relative block overflow-hidden rounded-xl border border-line">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="Selected photo" className="h-52 w-full object-cover" />
+          <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-md bg-bg/95 px-2.5 py-1.5 text-xs font-medium">
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Change photo
+          </span>
+        </span>
       ) : (
-        <span className="flex h-36 w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line bg-cream text-muted">
-          <span className="text-3xl" aria-hidden>📷</span>
-          <span className="text-sm font-medium">{busy ? "Preparing photo…" : label}</span>
+        <span className="flex h-40 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-surface text-muted transition-colors group-hover:border-muted peer-focus-visible:border-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand/20">
+          <Camera className="h-6 w-6" aria-hidden />
+          <span className="text-sm font-medium text-ink">{busy ? "Preparing photo…" : label}</span>
+          <span className="text-xs">Tap to take or choose a photo</span>
         </span>
       )}
     </label>

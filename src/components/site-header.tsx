@@ -4,85 +4,97 @@ import { connection } from "next/server";
 import { aiMode } from "@/ai/model";
 import { demoEveningActive } from "@/lib/clock";
 import { paypalMode } from "@/paypal/client";
-import { NavLink } from "./nav-link";
+import { Logo } from "./brand";
+import { MainNav } from "./main-nav";
 
-const ROLES = [
-  { href: "/restaurant", label: "Restaurant" },
-  { href: "/driver", label: "Driver" },
-  { href: "/shelter", label: "Shelter" },
-  { href: "/coordinator", label: "Coordinator" },
+export const ROLE_LINKS = [
+  { href: "/restaurant", label: "Restaurants" },
+  { href: "/driver", label: "Drivers" },
+  { href: "/shelter", label: "Shelters" },
+  { href: "/sponsor", label: "Sponsors" },
+  { href: "/impact", label: "Impact" },
 ];
 
-// The demo switcher is kept apart from the product: real users only ever see their own screen.
-export function DemoBar() {
+// One slim line that says this is a demo and how it's wired, so the product itself stays clean.
+export function DemoStrip() {
   return (
-    <div className="bg-ink text-cream">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2 text-xs">
-        <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.14em] text-saffron-soft">
-          <span className="h-1.5 w-1.5 rounded-full bg-tomato" aria-hidden /> Demo
-        </span>
-        <nav aria-label="Try the app as" className="flex flex-wrap items-center gap-1">
-          <span className="mr-1 text-cream/60">Try it as</span>
-          {ROLES.map((r) => (
-            <NavLink key={r.href} href={r.href} className="rounded-full px-2.5 py-1 text-cream/80 hover:bg-white/10 hover:text-white" activeClassName="bg-white/15 text-white">
-              {r.label}
-            </NavLink>
-          ))}
-        </nav>
+    <div className="border-b border-line bg-surface text-[13px] text-muted">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 sm:px-6">
+        <span className="font-semibold text-ink">Live demo</span>
         <Suspense fallback={null}>
-          <ModeBadges />
+          <Modes />
         </Suspense>
+        <Link href="/coordinator" className="ml-auto font-medium text-ink underline-offset-4 hover:underline">
+          Coordinator console
+        </Link>
       </div>
     </div>
   );
 }
 
-async function ModeBadges() {
+async function Modes() {
   await connection();
-  const badges = [
+  const parts = [
     paypalMode() === "sandbox" ? "PayPal sandbox" : "PayPal simulated",
-    aiMode() === "gemini" ? "Gemini Flash-Lite" : "AI off: rules",
+    aiMode() === "gemini" ? "Gemini Flash-Lite" : "AI off, rules only",
   ];
-  if (demoEveningActive()) badges.push("Demo clock: shelters open");
-  return (
-    <div className="ml-auto flex flex-wrap gap-1.5">
-      {badges.map((b) => (
-        <span key={b} className="rounded-full border border-white/15 px-2 py-0.5 text-cream/75">
-          {b}
-        </span>
-      ))}
-    </div>
-  );
+  if (demoEveningActive()) parts.push("demo clock keeps shelters open");
+  return <span className="hidden sm:inline">{parts.join(" · ")}</span>;
 }
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-line/80 bg-paper/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-ink">
-          <Logo />
-          MealBridge
-        </Link>
-        <nav className="ml-auto flex items-center gap-1 text-sm">
-          <NavLink href="/impact" className="rounded-full px-3 py-1.5 text-muted hover:text-ink" activeClassName="text-ink font-semibold">
-            Impact
-          </NavLink>
-          <NavLink href="/donate" className="rounded-full bg-tomato px-3.5 py-1.5 font-semibold text-white hover:brightness-110" activeClassName="">
-            Donate
-          </NavLink>
-        </nav>
+    <header className="sticky top-0 z-[1100] border-b border-line bg-bg/95 backdrop-blur supports-[backdrop-filter]:bg-bg/85">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+        <Logo />
+        <MainNav links={ROLE_LINKS} />
       </div>
     </header>
   );
 }
 
-export function Logo({ className = "h-7 w-7" }: { className?: string }) {
+export function SiteFooter() {
   return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden>
-      <circle cx="16" cy="16" r="15" fill="var(--leaf)" />
-      <path d="M7 19c3-6 15-6 18 0" stroke="var(--paper)" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-      <path d="M9 19v4M23 19v4M16 13.5v9.5" stroke="var(--paper)" strokeWidth="2.4" strokeLinecap="round" />
-      <circle cx="16" cy="9.5" r="2.6" fill="var(--tomato)" />
-    </svg>
+    <footer className="mt-24 border-t border-line">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="max-w-sm space-y-4">
+          <Logo />
+          <p className="text-sm leading-relaxed text-muted">
+            Tonight&apos;s surplus restaurant food, to tonight&apos;s shelter meals. Volunteer drivers are reimbursed through PayPal before they get home.
+          </p>
+        </div>
+        <FooterList title="Use MealBridge" links={ROLE_LINKS.slice(0, 4)} />
+        <FooterList
+          title="Organisation"
+          links={[
+            { href: "/impact", label: "Impact dashboard" },
+            { href: "/donate", label: "Donate" },
+            { href: "/coordinator", label: "Coordinator console" },
+          ]}
+        />
+      </div>
+      <div className="border-t border-line">
+        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-muted sm:px-6">
+          Built for the PayPal AI Hackathon. Payments use PayPal sandbox money; every business, shelter and person shown is fictional.
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+function FooterList({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+  return (
+    <div>
+      <p className="mb-3 text-sm font-semibold">{title}</p>
+      <ul className="space-y-2 text-sm text-muted">
+        {links.map((l) => (
+          <li key={l.href}>
+            <Link href={l.href} className="hover:text-ink">
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

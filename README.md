@@ -10,20 +10,24 @@ volunteer who drives it there before they get home. Built for the PayPal AI Hack
 
 ## Try it in two minutes (for judges)
 
-No sign-up. The dark bar at the top switches between the four sides of the app.
+No sign-up. The menu has a page for each side of the app (Restaurants, Drivers, Shelters, Sponsors),
+and the **Viewing as** control on each page picks which restaurant, driver, shelter or sponsor you are.
 
-1. **Restaurant:** type a note such as "about 30 portions of veg biryani, kept hot, ready till 10pm"
-   and press **Post surplus**. Gemini reads it, the food-safety rules check it, a shelter is matched
-   and the trip's money is reserved. A driver is booked.
-2. **Driver:** opens on the driver who got the job. Press **Demo: simulate the drive**, add a
-   photo of food (any food photo works), press **Picked up**, then on the next leg add a different
-   food photo, press **Demo: I'm at the shelter** and **Delivered**. Gemini checks the drop-off
-   photo: one that shows no food is held for a coordinator instead of paid.
-3. **Shelter:** watch the car on the live map, then press **Received**. Photo, GPS and the shelter's
-   tap agree, so PayPal Payouts reimburses the driver.
-4. **Impact:** the public dashboard (AG Studio). Press **Ask the Insights agent** and try a prompt.
-5. **Coordinator:** read-only without the passcode. With it you can approve held deliveries,
-   invoice sponsors through PayPal and reset the demo. Passcode for judges: _shared in the Devpost
+1. **Restaurants:** tap an example note (or type one, e.g. "about 30 portions of veg biryani, kept
+   hot, ready till 10pm") and press **Post surplus**. Gemini reads it, the food-safety rules check
+   it, a shelter is matched, the trip's money is reserved and a driver is booked.
+2. **Drivers:** opens on the driver who got the job. Press **Demo: simulate the drive**, add a photo
+   of the food, press **I've picked it up**. On the drop-off leg, simulate the drive again, add a
+   different photo of the same kind of food and press **Delivered**. Gemini checks the drop-off
+   photo; one that shows no food, or clearly different food, is held for a coordinator.
+3. **Shelters:** watch the car on the live map, then press **Received**. Photo, GPS and the
+   shelter's tap agree, so PayPal Payouts reimburses the driver. Shelters can also pause deliveries
+   for the night or change how many portions they can take; the matcher respects both.
+4. **Sponsors:** see the fund, the rescues it paid for and its invoices. **Get a PayPal invoice**
+   tops the fund up; paying it funds waiting rescues automatically.
+5. **Impact:** the public dashboard (AG Studio). Press **Ask the Insights agent** and try a prompt.
+6. **Coordinator console** (top right): read-only without the passcode. With it you can approve held
+   deliveries, invoice sponsors and reset the demo. Passcode for judges: _shared in the Devpost
    submission_.
 
 Shelters keep evening hours in California. So the demo works at any hour from anywhere, the
@@ -53,10 +57,11 @@ pickups first and produces those records as a CSV ready to file.
 
 | Part | What it does |
 | --- | --- |
-| Restaurant (phone) | One photo or note. Live progress of each rescue. Compliance plan via PayPal Subscriptions; SB 1383 records CSV. |
-| Driver (phone) | Today's job, reserved reimbursement, photo at pickup and drop-off, live location sharing (or a labelled simulated drive), earnings. |
-| Shelter (tablet) | Food arriving with a live map and ETA; one tap to confirm. Confidential shelters never appear exactly on public maps. |
-| Coordinator (desktop) | Only exceptions: held deliveries, payout failures, unfunded trips. Live map, funds, sponsor invoices with an AI-drafted friendly reminder. |
+| Restaurants | One photo or note. Live progress of each rescue. Compliance plan via PayPal Subscriptions; SB 1383 records CSV. |
+| Drivers | One job at a time, the reimbursement shown up front, live location sharing (or a labelled simulated drive) that doubles as proof of arrival, on/off-duty switch, earnings. |
+| Shelters and NGOs | Food arriving with a live map and ETA; one tap to confirm. Pause deliveries or set tonight's capacity; mark needs filled. Confidential shelters never appear exactly on public maps. |
+| Sponsors and city grants | Fund balance, rescues and meals funded, self-serve top-up through a PayPal invoice, invoice history with pay links. |
+| Coordinator console | Only exceptions: held deliveries, payout failures, unfunded trips. Live map, funds, sponsor invoices with an AI-drafted friendly reminder. Syncs with PayPal every two minutes. |
 | Donate | PayPal Checkout tied to a specific waiting rescue or an area fund. |
 | Impact (public) | AG Studio dashboard over the real ledger and trip records, with a custom Insights agent. |
 

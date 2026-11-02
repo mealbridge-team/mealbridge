@@ -43,7 +43,7 @@ export async function matchListing(db: Db, listingId: string, now = new Date()):
   const { listing, restaurant } = row;
 
   const incoming = await incomingPortions(db, now);
-  const allShelters = await db.select().from(shelters);
+  const allShelters = await db.select().from(shelters).where(eq(shelters.acceptingFood, true));
   const { ranked, rejected } = rankShelters(
     {
       lat: restaurant.lat,

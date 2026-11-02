@@ -51,6 +51,8 @@ export const shelters = pgTable("shelters", {
   dietRequirements: text("diet_requirements").array().notNull().default([]),
   opensAt: text("opens_at").notNull(), // "HH:MM" local time
   closesAt: text("closes_at").notNull(),
+  // A shelter can pause deliveries for the night (full, short-staffed); the matcher skips it.
+  acceptingFood: boolean("accepting_food").notNull().default(true),
   createdAt: createdAt(),
 });
 

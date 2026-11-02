@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { buttonClass } from "@/components/ui";
+import { CheckCircle2 } from "lucide-react";
+import { buttonClass, Field, inputClass, Notice } from "@/components/ui";
 
 type Fund = { id: string; label: string };
 type Status = { kind: "idle" | "working" | "error" | "done"; message?: string };
@@ -40,12 +41,26 @@ function loadSdk(): Promise<PayPalSdk> {
   });
 }
 
-export function DonateForm({ funds, initialFundId, tripId, mode }: { funds: Fund[]; initialFundId: string; tripId?: string; mode: "sandbox" | "mock" }) {
+export function DonateForm({
+  funds,
+  initialFundId,
+  tripId,
+  tripAmountCents,
+  mode,
+}: {
+  funds: Fund[];
+  initialFundId: string;
+  tripId?: string;
+  tripAmountCents?: number;
+  mode: "sandbox" | "mock";
+}) {
   const router = useRouter();
   const [fundId, setFundId] = useState(initialFundId);
-  const [amountCents, setAmountCents] = useState(500);
-  const [name, setName] = useState("Ana P.");
-  const [email, setEmail] = useState("ana.donor@example.com");
+  const [amountCents, setAmountCents] = useState(tripAmountCents ?? 500);
+  const [custom, setCustom] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [anonymous, setAnonymous] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [sdkReady, setSdkReady] = useState(mode === "mock");
@@ -114,6 +129,12 @@ export function DonateForm({ funds, initialFundId, tripId, mode }: { funds: Fund
   }, [mode]);
 
   async function pay() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailError("Enter an email address so we can send your receipt.");
+      document.getElementById("donor-email")?.focus();
+      return;
+    }
+    setEmailError(null);
     setStatus({ kind: "working" });
     if (mode === "mock") {
       try {
@@ -132,8 +153,9 @@ export function DonateForm({ funds, initialFundId, tripId, mode }: { funds: Fund
 
   if (status.kind === "done") {
     return (
-      <div className="space-y-3 rounded-xl bg-leaf-soft p-4">
-        <p className="font-medium">{status.message}</p>
+      <div className="space-y-4 py-6 text-center">
+        <CheckCircle2 className="mx-auto h-10 w-10 text-brand" aria-hidden />
+        <p className="mx-auto max-w-sm text-lg font-medium">{status.message}</p>
         <button className={buttonClass.secondary} onClick={() => setStatus({ kind: "idle" })}>
           Give again
         </button>
@@ -141,49 +163,100 @@ export function DonateForm({ funds, initialFundId, tripId, mode }: { funds: Fund
     );
   }
 
+  const presets = tripAmountCents && !PRESETS.includes(tripAmountCents) ? [tripAmountCents, ...PRESETS] : PRESETS;
+
   return (
-    <div className="space-y-4">
-      <fieldset className="space-y-2">
-        <legend className="mb-1 text-sm font-medium">Where should it go?</legend>
-        {funds.map((f) => (
-          <label key={f.id} className="flex items-center gap-2 text-sm">
-            <input type="radio" name="fund" checked={fundId === f.id} onChange={() => setFundId(f.id)} />
-            {f.label}
-          </label>
-        ))}
+    <div className="space-y-7">
+      <fieldset>
+        <legend className="mb-3 text-sm font-semibold">1. Where should it go?</legend>
+        <div className="space-y-2">
+          {funds.map((f) => (
+            <label key={f.id} className={`flex min-h-12 items-center gap-3 rounded-lg border px-4 text-sm transition-colors ${fundId === f.id ? "border-ink" : "border-line hover:bg-surface"}`}>
+              <input type="radio" name="fund" checked={fundId === f.id} onChange={() => setFundId(f.id)} className="accent-[var(--brand)]" />
+              {f.label}
+            </label>
+          ))}
+        </div>
       </fieldset>
 
-      <div>
-        <p className="mb-1 text-sm font-medium">Amount</p>
-        <div className="flex flex-wrap gap-2">
-          {PRESETS.map((c) => (
+      <fieldset>
+        <legend className="mb-3 text-sm font-semibold">2. Amount</legend>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {presets.map((c) => (
             <button
               key={c}
               type="button"
-              onClick={() => setAmountCents(c)}
-              className={`rounded-xl border px-4 py-2 text-sm ${amountCents === c ? "border-leaf bg-leaf text-white" : "border-line bg-paper"}`}
+              aria-pressed={!custom && amountCents === c}
+              onClick={() => {
+                setCustom("");
+                setAmountCents(c);
+              }}
+              className={`min-h-11 rounded-lg border text-sm font-semibold tabular-nums transition-colors ${!custom && amountCents === c ? "border-ink bg-ink text-bg" : "border-line hover:bg-surface"}`}
             >
-              ${c / 100}
+              ${(c / 100).toFixed(c % 100 ? 2 : 0)}
             </button>
           ))}
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted">$</span>
+            <input
+              inputMode="decimal"
+              aria-label="Other amount in dollars"
+              placeholder="Other"
+              value={custom}
+              onChange={(e) => {
+                setCustom(e.target.value);
+                const cents = Math.round(Number(e.target.value) * 100);
+                if (Number.isFinite(cents) && cents > 0) setAmountCents(cents);
+              }}
+              className={`${inputClass} pl-7 text-center`}
+            />
+          </div>
         </div>
-        <p className="mt-1 text-xs text-muted">$5 covers a typical rescue trip&apos;s fuel.</p>
-      </div>
+        <p className="mt-2 text-xs text-muted">$5 covers a typical rescue trip&apos;s fuel. Between $1 and $500.</p>
+      </fieldset>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="rounded-xl border border-line bg-paper p-2.5 text-sm" />
-        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email for your receipt" className="rounded-xl border border-line bg-paper p-2.5 text-sm" />
-      </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
-        Show me as anonymous on the public dashboard
-      </label>
+      <fieldset className="space-y-4">
+        <legend className="mb-3 text-sm font-semibold">3. Your details</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Name" htmlFor="donor-name" hint="Optional">
+            <input id="donor-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" className={inputClass} />
+          </Field>
+          <Field label="Email for your receipt" htmlFor="donor-email">
+            <input
+              id="donor-email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              autoComplete="email"
+              required
+              aria-invalid={emailError ? true : undefined}
+              aria-describedby={emailError ? "donor-email-error" : undefined}
+              className={inputClass}
+            />
+            {emailError && (
+              <p id="donor-email-error" className="text-xs text-bad">
+                {emailError}
+              </p>
+            )}
+          </Field>
+        </div>
+        <label className="flex items-center gap-2.5 text-sm">
+          <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} className="h-4 w-4 accent-[var(--brand)]" />
+          Show me as anonymous on the public dashboard
+        </label>
+      </fieldset>
 
-      <button type="button" onClick={pay} disabled={!sdkReady || status.kind === "working"} className="w-full rounded-xl bg-[#ffc439] px-4 py-3 text-base font-semibold text-[#111] hover:brightness-95 disabled:opacity-50">
-        {status.kind === "working" ? "Waiting for PayPal…" : !sdkReady ? "Loading PayPal…" : mode === "mock" ? "Pay with PayPal (simulated)" : "Pay with PayPal"}
-      </button>
-      {mode === "mock" && <p className="text-xs text-muted">Demo mode: no PayPal keys set, so this simulates a sandbox payment.</p>}
-      {status.kind === "error" && <p className="text-sm text-berry">{status.message}</p>}
+      <div className="space-y-2">
+        <button type="button" onClick={pay} disabled={!sdkReady || status.kind === "working"} className={`${buttonClass.paypal} w-full text-base`}>
+          {status.kind === "working"
+            ? "Waiting for PayPal…"
+            : !sdkReady
+              ? "Loading PayPal…"
+              : `Give $${(amountCents / 100).toFixed(amountCents % 100 ? 2 : 0)} with PayPal${mode === "mock" ? " (simulated)" : ""}`}
+        </button>
+        {mode === "mock" && <p className="text-xs text-muted">Demo mode: no PayPal keys are set, so this simulates a sandbox payment.</p>}
+        {status.kind === "error" && <Notice tone="bad">{status.message}</Notice>}
+      </div>
     </div>
   );
 }
