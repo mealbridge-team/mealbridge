@@ -121,10 +121,10 @@ function WhoPays({ delivered }: { delivered: RescueRow[] }) {
       center={
         <span>
           <span className="block text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-muted">Paid to drivers</span>
-          <span className="mt-1 block font-display text-3xl font-bold leading-none">
+          <span className="mt-1 block font-display text-[1.65rem] font-bold leading-none">
             <Money cents={Math.round(total * 100)} />
           </span>
-          <span className="mt-1 block text-[11px] font-semibold text-muted">$0 per pickup from restaurants</span>
+          <span className="mt-1.5 block text-[11px] font-semibold leading-snug text-muted">$0 per pickup from restaurants</span>
         </span>
       }
     />

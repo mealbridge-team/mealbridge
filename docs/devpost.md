@@ -96,6 +96,8 @@ match explanations, sponsor reminder drafts, and the Insights agent on the impac
 ## Links
 
 - Live demo: https://mealbridge-6py5.onrender.com
+- To try it: open the live demo, press **Try the demo**, then **Start the guided rescue**. A guide at
+  the bottom of the screen walks you through one rescue in about two minutes.
 - Coordinator passcode for judges: (add it here, not in the public repo)
 - Repo: (public GitHub URL)
 - Video: (public YouTube URL, under 3 minutes)

@@ -29,7 +29,3 @@ export function isTonight(date: Date, now = Date.now()) {
 export function daysAgo(days: number, now = Date.now()) {
   return new Date(now - days * 86_400_000);
 }
-
-export function withinMinutes(date: Date, minutes: number, now = Date.now()) {
-  return now - date.getTime() < minutes * 60_000;
-}

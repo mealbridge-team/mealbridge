@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Inter_Tight } from "next/font/google";
+import { Suspense } from "react";
+import { GuideBar } from "@/components/guide-bar";
 import { DemoStrip, SiteFooter, SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
@@ -32,6 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <SiteFooter />
+        <Suspense fallback={null}>
+          <GuideBar />
+        </Suspense>
       </body>
     </html>
   );

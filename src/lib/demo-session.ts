@@ -2,19 +2,17 @@ import { cookies } from "next/headers";
 import type { Db } from "@/db";
 import { drivers, restaurants, shelters, sponsors } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { ROLES, type Role } from "@/lib/roles";
+
+export { PORTAL, ROLE_LABEL, type Role } from "@/lib/roles";
 
 // Demo sign-in. Each restaurant, driver, shelter and sponsor has its own portal; instead of real
 // accounts (out of scope for the hackathon) the visitor picks who they are on /demo and we remember
 // it in a cookie. One person at a time, so a portal only ever shows its own work.
 
-export type Role = "restaurant" | "driver" | "shelter" | "sponsor";
 export type Persona = { role: Role; id: string };
 
 const COOKIE = "mb_persona";
-const ROLES: Role[] = ["restaurant", "driver", "shelter", "sponsor"];
-
-export const PORTAL: Record<Role, string> = { restaurant: "/restaurant", driver: "/driver", shelter: "/shelter", sponsor: "/sponsor" };
-export const ROLE_LABEL: Record<Role, string> = { restaurant: "Restaurant", driver: "Volunteer driver", shelter: "Shelter", sponsor: "Sponsor" };
 
 export async function getPersona(): Promise<Persona | null> {
   const raw = (await cookies()).get(COOKIE)?.value;

@@ -14,7 +14,7 @@ sure the volunteer who drives it isn't out of pocket."
 
 ## 0:15–0:40 · A restaurant posts food
 
-**Show:** Try the demo, sign in as Lakeside Catering Co. Restaurant screen (phone width). Take a photo of real food, or type "about 30 portions
+**Show:** Try the demo, Start the guided rescue (the guide bar appears at the bottom). Restaurant screen (phone width). Take a photo of real food, or type "about 30 portions
 of veg biryani, kept hot, ready till 10pm". Press Post surplus. Pause on the result card.
 
 **Say:** "Lakeside Catering snaps a photo. Gemini reads the dishes, portions and allergens. Plain-code
@@ -24,7 +24,7 @@ compliance plan, a PayPal subscription."
 
 ## 0:40–1:10 · The driver and the live map
 
-**Show:** Press Continue as Maya R. Driver screen: the job, "$4 reserved for you". Press Demo: simulate
+**Show:** The guide ticks step 1; press Continue as Maya R. Driver screen: the job, "$4 reserved for you". Press Demo: simulate
 the drive, add a photo, I've picked it up, then Delivered at the shelter. Press Continue as the shelter:
 the car on the live map with an ETA.
 

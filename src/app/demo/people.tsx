@@ -13,10 +13,10 @@ import { PersonaButton } from "./persona-button";
 
 type Person = { id: string; name: string; detail: string };
 
-const ROLE_INFO: Record<Role, { icon: LucideIcon; title: string; blurb: string; step?: number }> = {
-  restaurant: { icon: Store, title: "Restaurants", blurb: "Post tonight's surplus in one note or photo.", step: 1 },
-  driver: { icon: Car, title: "Volunteer drivers", blurb: "Pick up, drop off, get reimbursed by PayPal.", step: 2 },
-  shelter: { icon: HandHeart, title: "Shelters and NGOs", blurb: "See food arriving and confirm with one tap.", step: 3 },
+const ROLE_INFO: Record<Role, { icon: LucideIcon; title: string; blurb: string }> = {
+  restaurant: { icon: Store, title: "Restaurants", blurb: "Post tonight's surplus in one note or photo." },
+  driver: { icon: Car, title: "Volunteer drivers", blurb: "Pick up, drop off, get reimbursed by PayPal." },
+  shelter: { icon: HandHeart, title: "Shelters and NGOs", blurb: "See food arriving and confirm with one tap." },
   sponsor: { icon: Building2, title: "Sponsors and grants", blurb: "Fund rescues through PayPal invoices." },
 };
 
@@ -30,20 +30,20 @@ async function peopleFor(role: Role): Promise<Person[]> {
 }
 
 function RoleColumn({ role, people, currentId }: { role: Role; people: Person[]; currentId?: string }) {
-  const { icon: Icon, title, blurb, step } = ROLE_INFO[role];
+  const { icon: Icon, title, blurb } = ROLE_INFO[role];
   return (
     <section aria-labelledby={`role-${role}`} className="flex flex-col rounded-2xl bg-surface p-5 sm:p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-bg text-brand">
           <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
         </span>
-        {step && <span className="rounded-full bg-bg px-2.5 py-1 text-xs font-semibold text-muted">Step {step} of a rescue</span>}
+        
       </div>
       <h2 id={`role-${role}`} className="font-display text-xl font-semibold tracking-[-0.02em]">
         {title}
       </h2>
       <p className="mb-5 mt-1 text-sm leading-relaxed text-muted">{blurb}</p>
-      <ul className="mt-auto space-y-2">
+      <ul className="space-y-2">
         {people.map((p) => (
           <li key={p.id}>
             <form action={signInAs.bind(null, role, p.id)}>

@@ -13,7 +13,6 @@ import { paypalMode } from "@/paypal/client";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, buttonClass, Container, Empty, Money, Notice, PageHeader, Panel, RescueSteps, Skeleton, smallButton, timeLabel, type Tone } from "@/components/ui";
-import { DemoHandoff } from "@/components/demo-handoff";
 import { PageArt } from "@/components/page-art";
 import { personaId } from "@/lib/demo-session";
 import { PortalSignIn } from "@/app/demo/people";
@@ -113,9 +112,6 @@ async function RestaurantView({ searchParams }: { searchParams: PageProps<"/rest
                             {trip.driver ? ` with ${trip.driver.anonymous ? "a volunteer" : trip.driver.name}` : ""}
                           </p>
                           <RescueSteps status={trip.trip.status} />
-                          {trip.driver && trip.trip.status === "assigned" && (
-                            <DemoHandoff role="driver" id={trip.driver.id} name={trip.driver.name} what="the driver picks it up next." />
-                          )}
                         </>
                       ) : l.safetyStatus === "rejected" ? (
                         <p className="text-sm text-bad">Not safe to rescue: {l.safetyReasons.join(" ")}</p>

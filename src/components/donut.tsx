@@ -39,7 +39,7 @@ export function Donut({ slices, center, title }: { slices: Slice[]; center: Reac
             );
           })}
         </svg>
-        <div className="absolute inset-0 grid place-items-center px-9 text-center">{center}</div>
+        <div className="absolute inset-[22%] grid place-items-center text-center">{center}</div>
       </div>
       <figcaption>
         <ul className="space-y-3">

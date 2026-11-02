@@ -9,9 +9,7 @@ import { CountUp } from "@/components/motion";
 import { LiveMap } from "@/components/live-map";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, Container, Empty, inputClass, PageHeader, Panel, readable, Skeleton, smallButton, TripStatusBadge, timeLabel } from "@/components/ui";
-import { DemoHandoff } from "@/components/demo-handoff";
 import { PageArt } from "@/components/page-art";
-import { withinMinutes } from "@/lib/clock";
 import { personaId } from "@/lib/demo-session";
 import { PortalSignIn } from "@/app/demo/people";
 
@@ -66,8 +64,6 @@ async function ShelterView({ searchParams }: { searchParams: PageProps<"/shelter
   const incoming = trips.filter((t) => INCOMING.includes(t.trip.status));
   const past = trips.filter((t) => !INCOMING.includes(t.trip.status)).slice(0, 6);
   const portionsComing = incoming.reduce((sum, t) => sum + t.listing.totalPortions, 0);
-  // The delivery this shelter confirmed in the last half hour, for the demo's hand-off back to the driver.
-  const justConfirmed = past.find((t) => t.trip.shelterConfirmedAt && withinMinutes(t.trip.shelterConfirmedAt, 30));
   const onRoad = incoming.filter((t) => t.trip.status === "assigned" || t.trip.status === "picked_up");
 
   return (
@@ -211,16 +207,7 @@ async function ShelterView({ searchParams }: { searchParams: PageProps<"/shelter
               {past.length === 0 ? (
                 <Empty>No deliveries yet.</Empty>
               ) : (
-                <div className="space-y-4">
-                  {justConfirmed?.driver && (
-                    <DemoHandoff
-                      role="driver"
-                      id={justConfirmed.driver.id}
-                      name={justConfirmed.driver.name}
-                      what="see the driver's PayPal reimbursement arrive."
-                    />
-                  )}
-                  <ul className="divide-y divide-line text-sm">
+<ul className="divide-y divide-line text-sm">
                     {past.map((t) => (
                       <li key={t.trip.id} className="flex items-center justify-between gap-3 py-2.5">
                         <span>
@@ -230,7 +217,6 @@ async function ShelterView({ searchParams }: { searchParams: PageProps<"/shelter
                       </li>
                     ))}
                   </ul>
-                </div>
               )}
             </Panel>
           </div>

@@ -7,7 +7,6 @@ import { allDrivers, tripViews, type TripView } from "@/lib/queries";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, Container, dateLabel, Empty, Money, Notice, PageHeader, Panel, readable, RescueSteps, Skeleton, smallButton, timeLabel } from "@/components/ui";
-import { DemoHandoff } from "@/components/demo-handoff";
 import { PageArt } from "@/components/page-art";
 import { personaId } from "@/lib/demo-session";
 import { PortalSignIn } from "@/app/demo/people";
@@ -204,9 +203,6 @@ function ActiveJob({ view, driver }: { view: TripView; driver: { id: string; lat
           />
         )}
         {trip.status === "delivered" && <Notice tone="ok" title="Delivered. Thank you.">As soon as the shelter confirms, PayPal sends your reimbursement.</Notice>}
-        {(trip.status === "picked_up" || trip.status === "delivered") && (
-          <DemoHandoff role="shelter" id={shelter.id} name={shelter.name} what="the shelter confirms it arrived, which releases your PayPal payout." />
-        )}
         {trip.status === "needs_review" && (
           <Notice tone="warn" title="A coordinator is checking this delivery before paying.">
             {trip.verification?.notes.filter((n) => !n.startsWith("Demo mode")).join(" ")}

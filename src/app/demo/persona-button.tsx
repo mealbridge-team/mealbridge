@@ -16,7 +16,7 @@ export function PersonaButton({ name, detail, current }: { name: string; detail:
       }`}
     >
       <span className="min-w-0">
-        <span className="block truncate font-semibold">{name}</span>
+        <span className="block font-semibold leading-snug">{name}</span>
         <span className="block truncate text-sm text-muted">{detail}</span>
       </span>
       {pending ? (

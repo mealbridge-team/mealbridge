@@ -20,7 +20,9 @@ import {
 import { createListing } from "@/services/listings";
 import { cancelTrip, matchListing, reassignTrip, type MatchOutcome } from "@/services/pipeline";
 import { requireCoordinator, unlockCoordinator } from "@/lib/access";
+import { endGuide, startGuide } from "@/lib/demo-guide";
 import { clearPersona, PORTAL, setPersona, type Role } from "@/lib/demo-session";
+import { allRestaurants } from "@/lib/queries";
 import { requestOrigin } from "@/lib/origin";
 import { PayPalError } from "@/paypal/client";
 import { draftReminder, invoiceSponsor, InvoiceError, sendReminder, simulateInvoicePayment } from "@/services/invoices";
@@ -282,4 +284,20 @@ export async function signInAs(role: Role, id: string) {
 export async function signOut() {
   await clearPersona();
   redirect("/demo");
+}
+
+// Guided rescue: start as a restaurant whose own plan pays for the trip, so the rescue is funded and
+// a driver is booked without waiting on a donor. The guide bar takes it from there.
+export async function guideStart() {
+  const restaurants = await allRestaurants(getDb());
+  const start = restaurants.find((r) => r.plan === "compliance") ?? restaurants[0];
+  if (!start) redirect("/demo");
+  await startGuide(start.id);
+  await setPersona({ role: "restaurant", id: start.id });
+  redirect("/restaurant");
+}
+
+export async function guideExit() {
+  await endGuide();
+  refresh();
 }

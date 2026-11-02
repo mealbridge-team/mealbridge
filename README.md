@@ -10,26 +10,27 @@ volunteer who drives it there before they get home. Built for the PayPal AI Hack
 
 ## Try it in two minutes (for judges)
 
-No sign-up. Every restaurant, driver, shelter and sponsor has their own private page; press **Try
-the demo** and pick who to be (one click, no password). Each step of a rescue offers a **Continue as…**
-button that switches you to the next person, so one rescue flows end to end.
+No sign-up. Press **Try the demo**, then **Start the guided rescue**. A guide pinned to the bottom of
+the screen walks you through one rescue in four steps and switches you to the next person when it's
+their turn (each restaurant, driver, shelter and sponsor has their own private page):
 
-1. **Restaurant** (sign in as Lakeside Catering Co.): tap an example note (or type one, e.g. "about 30 portions of veg biryani, kept
-   hot, ready till 10pm") and press **Post surplus**. Gemini reads it, the food-safety rules check
-   it, a shelter is matched, the trip's money is reserved and a driver is booked.
-2. **Driver:** press **Continue as** the driver who was booked. Press **Demo: simulate the drive**, add a photo
-   of the food, press **I've picked it up**. On the drop-off leg, simulate the drive again, add a
-   different photo of the same kind of food and press **Delivered**. Gemini checks the drop-off
-   photo; one that shows no food, or clearly different food, is held for a coordinator.
-3. **Shelter:** press **Continue as** the shelter, watch the car on the live map, then press
-   **Received**. Photo, GPS and the
-   shelter's tap agree, so PayPal Payouts reimburses the driver. Shelters can also pause deliveries
-   for the night or change how many portions they can take; the matcher respects both.
-4. **Sponsor** (switch person from the menu at the top right): see the fund, the rescues it paid for and its invoices. **Get a PayPal invoice**
-   tops the fund up; paying it funds waiting rescues automatically.
-5. **Impact:** count-ups, a map of every delivered route, who paid for the drives, AG Studio charts
-   that cross-filter, and the Insights agent: pick a starter question or ask your own.
-6. **Coordinator console** (top strip): read-only without the passcode. With it you can approve held
+1. **Restaurant posts:** tap an example note (or type one, e.g. "about 30 portions of veg biryani,
+   kept hot, ready till 10pm") and press **Post surplus**. Gemini reads it, the food-safety rules
+   check it, a shelter is matched, the trip's money is reserved and a driver is booked.
+2. **Driver delivers:** press **Demo: simulate the drive**, add a photo of the food, press **I've
+   picked it up**. Then **Demo: I'm at the shelter**, add a new photo of the same kind of food and
+   press **Delivered**. Gemini checks the drop-off photo; one that shows no food, different food, or
+   the pickup photo again is held for a coordinator (the guide says so).
+3. **Shelter confirms:** press **Received**. Photo, GPS and the shelter's tap agree, so PayPal
+   Payouts reimburses the driver.
+4. **Driver paid:** the guide shows the payout and links to **Impact**: count-ups, a map of every
+   delivered route, who paid for the drives, AG Studio charts that cross-filter, and the Insights
+   agent.
+
+Then explore freely from **Try the demo**: sign in as a **Sponsor** to top up a fund with a PayPal
+invoice, or **Donate** to fund a waiting pickup.
+
+**Coordinator console** (top strip): read-only without the passcode. With it you can approve held
    deliveries, invoice sponsors and reset the demo. Passcode for judges: _shared in the Devpost
    submission_.
 
