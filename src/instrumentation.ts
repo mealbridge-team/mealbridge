@@ -26,4 +26,7 @@ export async function register() {
     await resetDemoData(db);
     console.log("Empty database: loaded the MealBridge demo data.");
   }
+
+  const { startPayPalSync } = await import("@/services/paypal-sync");
+  startPayPalSync(db);
 }
